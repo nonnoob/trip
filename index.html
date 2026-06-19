@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e7490">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="我们的旅行">
+<title>我们的旅行</title>
+<style>
+:root{
+  --bg:#f4f5f3; --card:#ffffff; --ink:#1b1c1a; --muted:#6c6e69; --line:#e7e8e4;
+  --accent:#0e7490; --accent-ink:#0e7490; --accent-soft:#e6f6fa;
+  --ok-i:#15803d; --ok-b:#dcfce7; --plan-i:#b45309; --plan-b:#fdf0d9; --idea-i:#5b5f66; --idea-b:#edeeec;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 18px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#16181a; --card:#212427; --ink:#eef0ee; --muted:#9aa0a0; --line:#31363a;
+    --accent:#22b8d6; --accent-ink:#7fe0f2; --accent-soft:#10343d;
+    --ok-i:#86efac; --ok-b:#14361f; --plan-i:#f2c879; --plan-b:#3a2c12; --idea-i:#b8bcbf; --idea-b:#2a2f33; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.35);}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+#app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:78px}
+.appbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;gap:10px}
+.appbar h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+.appbar .sub{font-size:12px;color:var(--muted);margin-left:auto}
+.back{border:none;background:none;color:var(--accent-ink);font-size:15px;display:flex;align-items:center;gap:4px;padding:0;cursor:pointer;font-weight:600}
+.wrap{padding:16px 16px 8px}
+.hero{background:linear-gradient(135deg,var(--accent),#0b5c73);color:#fff;border-radius:20px;padding:18px 18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero .lab{font-size:12px;opacity:.86;letter-spacing:.4px}
+.hero .nm{font-size:19px;font-weight:700;margin:2px 0 8px}
+.hero .big{font-size:34px;font-weight:800;line-height:1;letter-spacing:.5px}
+.hero .big small{font-size:14px;font-weight:600;opacity:.85;margin-left:6px}
+.hero .meta{font-size:13px;opacity:.9;margin-top:10px}
+.hero .go{margin-top:14px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.hero .glow{position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)}
+.sec{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin:20px 4px 10px;text-transform:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.trip{display:flex;align-items:center;gap:13px;padding:14px 15px;cursor:pointer;border-bottom:1px solid var(--line)}
+.trip:last-child{border-bottom:none}
+.trip .ic{width:46px;height:46px;border-radius:13px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:24px;flex:0 0 auto}
+.trip .tx{flex:1;min-width:0}
+.trip .t1{font-size:15.5px;font-weight:700;line-height:1.25}
+.trip .t2{font-size:12.5px;color:var(--muted);margin-top:1px}
+.trip .ch{color:var(--muted);font-size:20px;flex:0 0 auto}
+.pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.p-ok{background:var(--ok-b);color:var(--ok-i)} .p-plan{background:var(--plan-b);color:var(--plan-i)} .p-idea{background:var(--idea-b);color:var(--idea-i)}
+.prog{height:5px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:7px}
+.prog>i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.dhero{padding:4px 4px 0}
+.dtitle{font-size:23px;font-weight:800;margin:2px 0 4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;color:var(--ink);box-shadow:var(--shadow)}
+.chip b{font-weight:700}
+.docbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:12px 0 2px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:13px;padding:12px;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer}
+.block{margin:18px 0}
+.block h3{font-size:15px;margin:0 0 9px;display:flex;align-items:center;gap:7px;font-weight:700}
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 13px 13px 0;padding:11px 14px;font-size:13.5px;color:var(--ink);box-shadow:var(--shadow)}
+.day{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px 15px;margin-bottom:13px}
+.day .dh{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.day .dh .dn{font-size:15px;font-weight:800}
+.day .dh .dd{font-size:12.5px;color:var(--muted)}
+.route{margin:9px 0 12px;display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border-radius:11px;padding:9px 13px;font-size:13px;font-weight:700;text-decoration:none}
+.tl{position:relative;padding-left:4px}
+.it{display:flex;gap:11px;padding-bottom:4px}
+.it .tm{font-variant-numeric:tabular-nums;font-size:12px;color:var(--accent-ink);font-weight:700;width:42px;flex:0 0 auto;padding-top:2px}
+.it .rail{position:relative;width:14px;flex:0 0 auto}
+.it .rail .dot{position:absolute;left:3px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.it .rail .ln{position:absolute;left:6.5px;top:12px;bottom:-6px;width:2px;background:var(--line)}
+.it:last-child .rail .ln{display:none}
+.it .ct{flex:1;padding-bottom:14px}
+.it .ct .h{font-size:14.5px;font-weight:700;line-height:1.3}
+.it .ct .n{font-size:12.5px;color:var(--muted);margin-top:1px}
+.chk{display:flex;align-items:flex-start;gap:11px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.chk:last-child{border-bottom:none}
+.chk .box{width:21px;height:21px;border-radius:7px;border:2px solid var(--line);flex:0 0 auto;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:.15s;font-size:13px;color:#fff}
+.chk.on .box{background:var(--accent);border-color:var(--accent)}
+.chk .ctx{font-size:14px}
+.chk.on .ctx{color:var(--muted);text-decoration:line-through}
+.chk .ctx small{display:block;color:var(--muted);font-size:12px;text-decoration:none;margin-top:1px}
+.food{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px}
+.food:last-child{border-bottom:none}
+.food .fn{font-weight:600} .food .fd{color:var(--muted);font-size:12.5px;text-align:right}
+.tips li{font-size:13.5px;margin:5px 0;color:var(--ink)}
+.tips{padding-left:18px;margin:6px 0}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+.tabbar a{flex:1;text-align:center;padding:9px 0 8px;color:var(--muted);text-decoration:none;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.tabbar a .i{font-size:20px;line-height:1}
+.tabbar a.on{color:var(--accent-ink);font-weight:700}
+.foot{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 20px 6px}
+.lgrp{margin:6px 0 16px}
+.lgrp .lh{font-size:13px;font-weight:800;margin:10px 4px 6px;display:flex;align-items:center;gap:7px}
+.fade{animation:f .22s ease}@keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="appbar" id="bar"><h1>我们的旅行</h1><span class="sub" id="barsub"></span></div>
+  <div id="view"></div>
+  <div class="tabbar" id="tabs">
+    <a data-go="#/" class="on"><span class="i">🗓️</span>行程</a>
+    <a data-go="#/lists"><span class="i">✅</span>清单</a>
+    <a data-go="__docs__"><span class="i">📄</span>文档</a>
+  </div>
+</div>
+<script>
+const FOLDER='https://drive.google.com/drive/folders/1yHdkf6dKuEj6mfUEcsLlwWI4bvFyyo5Q';
+const DOC=id=>'https://docs.google.com/document/d/'+id+'/edit';
+const TRIPS=[
+ {id:'sf',emoji:'🌉',name:'旧金山',en:'San Francisco',start:'2026-06-19',days:3,status:'ok',statusText:'机/酒/火车票已订',
+  transport:'✈️ 飞去 · 🚆 海岸星光号回',weather:'6月雾季：早晚冷、午后放晴。带保暖外套，金门大桥那侧风大更冷。',
+  doc:DOC('18Qf3FV4zpjlIRB-vZzp33H4r3xvwAYpozDoKedfn_9U'),
+  chips:[['📅','6/19–6/21 周五~周日'],['🧭','3 天 2 晚'],['🚆','火车回 Irvine']],
+  itinerary:[
+   {n:'Day 1',d:'6/19 周五 · 市区经典',route:'https://www.google.com/maps/dir/?api=1&origin=Union+Square+San+Francisco&destination=Crab+House+at+Pier+39&waypoints=SFMOMA%7CDragon+Gate+Chinatown+San+Francisco%7CPowell+St+Cable+Car+Turnaround%7CLombard+Street%7CThe+Buena+Vista+Cafe%7CMusee+Mecanique%7CFishermans+Wharf&travelmode=walking',
+    items:[['12:30','联合广场 Union Square','放行李、吃午饭，市区中心'],['13:15','SFMOMA 现代艺术馆','周五5点关门，先来；约2小时'],['15:30','唐人街龙门 Dragon Gate','穿过最古老唐人街'],['16:00','Powell 缆车总站','看人工掉头转盘'],['16:30','九曲花街 Lombard St','最弯的花街'],['17:10','The Buena Vista','爱尔兰咖啡发源地'],['17:55','机械博物馆','免费古董游戏机'],['18:35','渔人码头 · Pier 39','看海狮'],['19:00','Crab House 晚餐','招牌蒜香烤蟹（需订位）']]},
+   {n:'Day 2',d:'6/20 周六 · 金门+文艺区',route:'https://www.google.com/maps/dir/?api=1&origin=Golden+Gate+Bridge+Welcome+Center&destination=La+Taqueria+Mission+San+Francisco&waypoints=Warming+Hut+San+Francisco%7CCalifornia+Academy+of+Sciences%7CAmoeba+Music+Haight+Street%7CAlamo+Square+Painted+Ladies%7CMission+Dolores+Park&travelmode=driving',
+    items:[['09:00','金门大桥','Battery Spencer / 迎宾中心机位'],['10:30','Warming Hut','桥下海边小店歇脚'],['12:00','加州科学馆','雨林球+水族馆，馆内午饭'],['15:00','Amoeba Music','Haight 嬉皮街淘碟'],['16:00','彩绘女士 Painted Ladies','全家福明信片机位'],['17:30','多洛雷斯公园','草坡看城市天际线'],['19:00','Mission 晚餐','La Taqueria 神级 burrito']]},
+   {n:'Day 3',d:'6/21 周日 · 坐火车回',items:[['上午','Emeryville/Oakland 上车','市区免费接驳大巴到站'],['白天','海岸星光号 · 坐右侧','沿太平洋海岸南下，靠窗看海'],['约21:00','洛杉矶换乘','转 Surfliner/Metrolink 回 Irvine']]}
+  ],
+  food:[['Crab House @ Pier 39','蒜香烤蟹 · Day1晚'],['The Buena Vista','爱尔兰咖啡 · Day1'],['La Taqueria','Mission burrito · Day2晚'],['Good Mong Kok','唐人街平价点心'],['Boudin Bakery','酸面包蛤蜊浓汤']],
+  checklist:[['c1','订 Crab House 周五晚餐','Pier 39，周末满得快'],['c2','确认火车接驳站与大巴时间','Salesforce Transit Center → EMY/OKJ'],['c3','确认 LA → Irvine 接驳','Pacific Surfliner / Metrolink'],['c4','下载 MuniMobile App','市区公交/缆车买票'],['c5','看出发日天气穿搭','雾季分层、带外套'],['c6','（可选）订 Alcatraz 船票','热门，常提前售罄']],
+  tips:['雾季穿搭走"洋葱式"，金门大桥那侧最冷最大风。','金门大桥建议打车/开车去，公交慢。','海岸星光号常晚点 1–3 小时，回程别卡太紧的接驳。','缆车排队长，Powell-Hyde 线风景最好。']
+ },
+ {id:'yos',emoji:'💦',name:'优胜美地',en:'Yosemite',start:'2026-07-03',days:3,status:'plan',statusText:'日期已定 · 待订房',
+  transport:'🚗 自驾 · 尔湾约 5.5–6h',weather:'盛夏两头：山谷白天 30–34°C 干热，高山区（Tioga/Tuolumne）凉爽 20 出头。',
+  doc:DOC('1Yr1yM66JL0daZe3LP1WJZw8INug5umLKz8m_VUBft6g'),
+  chips:[['📅','7/3–7/5 逢独立日周末'],['🔥','全年最挤'],['🎟️','2026 免预约·只需门票']],
+  itinerary:[
+   {n:'Day 1',d:'7/3 周五 · 到达',route:'https://www.google.com/maps/dir/?api=1&origin=Irvine+CA&destination=Tunnel+View+Yosemite&travelmode=driving',
+    items:[['早','尔湾出发','早6点前走，避开周末堵车'],['中午','南门进 · Mariposa Grove','巨杉林，树荫凉快'],['傍晚','Tunnel View','El Capitan+Half Dome 全景日落'],['晚','入住','园内或 Oakhurst/El Portal']]},
+   {n:'Day 2',d:'7/4 周六 · 瀑布趁早',items:[['07:00','Mist Trail（趁早）','Vernal/Nevada 瀑布，避热避人'],['午后','Merced 河滩泡水','Sentinel/Cathedral Beach 避暑'],['傍晚','Glacier Point','看 Half Dome 被夕阳染红']]},
+   {n:'Day 3',d:'7/5 周日 · 高山避暑',route:'https://www.google.com/maps/dir/?api=1&origin=Yosemite+Valley&destination=Tenaya+Lake&travelmode=driving',
+    items:[['上午','Tioga Road 上高山','比山谷凉一大截'],['中午','Tenaya Lake 戏水','碧蓝高山湖'],['下午','Tuolumne Meadows','高山草甸，傍晚返程']]}
+  ],
+  food:[['进园前 Oakhurst 采购','Vons/Walmart 备野餐'],['河滩野餐','7月最爽：泡水+野餐'],['Mountain Room','Valley Lodge 美式正餐'],['Happy Burger','Mariposa 平价']],
+  checklist:[['y1','订住宿（最优先）','7/4 周末极抢手，园内盯候补'],['y2','买门票或 $80 年票','Recreation.gov 数字票'],['y3','查山火/路况 conditions','nps.gov/yose，夏季可能烟霾'],['y4','下载离线地图（含步道）','园内几乎无信号'],['y5','备防晒/泳衣/2L水/驱蚊','山谷酷热+戏水+高山蚊多'],['y6','门户镇先加满油','园内无加油站']],
+  tips:['早6点前出发、8点前进谷，否则停车位全满。','正午最热→去 Merced 河泡水或上 Tioga 避暑。','傍晚 Glacier Point 看日落，山上凉带件外套。','熊箱存食是硬规定，违规最高罚 $5,000。']
+ },
+ {id:'sea',emoji:'🌲',name:'西雅图',en:'Seattle',start:'2026-08-15',days:5,status:'idea',statusText:'按季节建议',
+  transport:'✈️ 飞 + 当地租车',weather:'8月全年最干爽，Rainier 高山野花盛开，窗口最窄。',
+  doc:DOC('1kaDIB6FFI6BX6AafDJ5tQ5Ze55AB2V9cswd_EzjG-s0'),
+  highlights:['派克市场 + 第一家星巴克','Rainier 雷尼尔山野花','奥林匹克国家公园雨林海岸','波音工厂 / 飞行博物馆','太空针塔 + 玻璃艺术馆']},
+ {id:'yel',emoji:'🦬',name:'黄石 + 大提顿',en:'Yellowstone',start:'2026-09-05',days:6,status:'idea',statusText:'按季节建议',
+  transport:'✈️ 飞 Bozeman + 自驾环线',weather:'9月初游客比盛夏少、天气仍好、动物活跃；园内住宿要提前抢。',
+  doc:DOC('1o-ljM14H569TzPrRyQwUC-sR8Rmk3owYcMeOLOvs8UQ'),
+  highlights:['老忠实喷泉 + 大棱镜温泉','黄石大峡谷 + 下瀑布','Lamar/Hayden 谷看野牛狼群','大提顿雪山 + 珍妮湖','园内住宿需提前 6–12 个月']},
+ {id:'abq',emoji:'🎈',name:'阿尔伯克基',en:'Albuquerque',start:'2026-10-03',days:5,status:'idea',statusText:'气球节 10/3–11',
+  transport:'🚗 Route 66 自驾 或 ✈️ 飞',weather:'刚好赶上国际热气球节（2026/10/3–11），全年最值得来的时刻。',
+  doc:DOC('1GZhLWe26UtP9zl_mLofUHrCuZIUr7ULahC2Vfw3FYcY'),
+  highlights:['国际热气球节·黎明万球齐升','《绝命毒师》取景地巡礼','老城区 Old Town','Sandia 山缆车看日落','酒店暴涨，提前 3–6 个月订']},
+ {id:'nyc',emoji:'🗽',name:'纽约',en:'New York',start:'2026-12-19',days:5,status:'idea',statusText:'假日季氛围',
+  transport:'✈️ 飞 + 地铁步行',weather:'圣诞假日季氛围最佳（也可改10月看秋叶、更舒适）。',
+  doc:DOC('12T_c-LZBc03Bff7tfEKp2DJg4DC0zY1PRnV6UfRfkSI'),
+  highlights:['洛克菲勒圣诞树 + 溜冰','时代广场 + 帝国大厦夜景','中央公园 + 大都会博物馆','百老汇音乐剧','自由女神 + 布鲁克林大桥']},
+ {id:'chi',emoji:'🏙️',name:'芝加哥',en:'Chicago',start:'2027-06-12',days:5,status:'idea',statusText:'按季节建议',
+  transport:'✈️ 飞 + 市内步行/L地铁',weather:'初夏湖滨宜人、节庆开始、未到盛夏闷热。',
+  doc:DOC('1QttUBiz-jyf1atWSR9rq7_0ROFFtw05LO6SPilVbu24'),
+  highlights:['千禧公园云门"豆子"','建筑游船看摩天楼','深盘披萨 + 芝加哥热狗','密歇根湖滨步道','艺术博物馆 + 威利斯塔']}
+];
+const ST={ok:['p-ok','✅'],plan:['p-plan','📅'],idea:['p-idea','💡']};
+const $=s=>document.querySelector(s);
+const view=$('#view'), bar=$('#bar'), barsub=$('#barsub');
+function daysTo(s){const t=new Date();t.setHours(0,0,0,0);const d=new Date(s+'T00:00:00');return Math.round((d-t)/864e5);}
+function cdText(n){return n>1?['还有',n+' 天']:n===1?['明天出发','✦']:n===0?['今天出发','✦']:n>-1?['','']:['已结束',''];}
+let CHK={};try{CHK=JSON.parse(localStorage.getItem('trip_checks')||'{}')}catch(e){}
+function saveChk(){try{localStorage.setItem('trip_checks',JSON.stringify(CHK))}catch(e){}}
+function prog(t){if(!t.checklist)return null;const done=t.checklist.filter(c=>CHK[t.id+'::'+c[0]]).length;return{done,total:t.checklist.length};}
+function esc(s){return(s+'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function renderHome(){
+  setTabs('#/');bar.querySelector('h1').textContent='我们的旅行';showBack(false);
+  const sorted=[...TRIPS].sort((a,b)=>a.start.localeCompare(b.start));
+  const next=sorted.find(t=>daysTo(t.start)>=0)||sorted[0];
+  const booked=TRIPS.filter(t=>t.status!=='idea').length;
+  barsub.textContent=booked+' 程已定 · '+(TRIPS.length-booked)+' 程规划中';
+  const [a,bb]=cdText(daysTo(next.start));
+  let h='<div class="wrap fade">';
+  h+=`<div class="hero" onclick="location.hash='#/t/${next.id}'"><div class="glow"></div>
+    <div class="lab">下一程</div><div class="nm">${next.emoji} ${next.name} ${next.en}</div>
+    <div class="big">${a}${bb&&bb!=='✦'?'<small>'+bb+'</small>':''}</div>
+    <div class="meta">${fmt(next.start)} · ${next.days} 天 · ${esc(next.transport)}</div>
+    <span class="go">查看行程 →</span></div>`;
+  h+='<div class="sec">全部行程</div><div class="card">';
+  sorted.forEach(t=>{const st=ST[t.status];const p=prog(t);
+    h+=`<div class="trip" onclick="location.hash='#/t/${t.id}'">
+      <div class="ic">${t.emoji}</div>
+      <div class="tx"><div class="t1">${t.name} <span style="color:var(--muted);font-weight:600;font-size:13px">${t.en}</span></div>
+      <div class="t2">${fmt(t.start)} · ${t.days} 天 · <span class="pill ${st[0]}">${st[1]} ${esc(t.statusText)}</span></div>
+      ${p?`<div class="prog"><i style="width:${p.total?Math.round(p.done/p.total*100):0}%"></i></div>`:''}</div>
+      <div class="ch">›</div></div>`;});
+  h+='</div><div class="foot">数据来自你的旅行工作区 · 点任意行程看逐日安排、地图与清单<br>这是原型；部署后可"添加到主屏"像 App 一样用</div></div>';
+  view.innerHTML=h;
+}
+function renderTrip(id){
+  const t=TRIPS.find(x=>x.id===id);if(!t)return renderHome();
+  setTabs('');bar.querySelector('h1').textContent=t.name;barsub.textContent='';showBack(true);
+  const st=ST[t.status];let h='<div class="wrap fade"><div class="dhero">';
+  h+=`<div style="font-size:30px">${t.emoji}</div><div class="dtitle">${t.name} <span style="font-size:15px;color:var(--muted);font-weight:600">${t.en}</span></div>
+    <span class="pill ${st[0]}">${st[1]} ${esc(t.statusText)}</span>`;
+  h+='<div class="chips">'+(t.chips||[['📅',fmt(t.start)],['🧭',t.days+' 天'],['🚗',t.transport]]).map(c=>`<span class="chip">${c[0]} <b>${esc(c[1])}</b></span>`).join('')+'</div>';
+  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 打开完整保姆级攻略（Google 文档）</a></div>`;
+  if(t.weather)h+=`<div class="block"><div class="note">🌦️ ${esc(t.weather)}</div></div>`;
+  if(t.itinerary){h+='<div class="block"><h3>🗺️ 逐日安排</h3>';
+    t.itinerary.forEach(d=>{h+=`<div class="day"><div class="dh"><span class="dn">${d.n}</span><span class="dd">· ${esc(d.d)}</span></div>`;
+      if(d.route)h+=`<a class="route" href="${d.route}" target="_blank" rel="noopener">📍 在 Google 地图打开当天路线</a>`;
+      h+='<div class="tl">'+d.items.map(it=>`<div class="it"><div class="tm">${esc(it[0])}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct"><div class="h">${esc(it[1])}</div>${it[2]?`<div class="n">${esc(it[2])}</div>`:''}</div></div>`).join('')+'</div></div>';});
+    h+='</div>';}
+  if(t.highlights){h+='<div class="block"><h3>✨ 亮点抢先看</h3><div class="card" style="padding:6px 15px">'+
+    t.highlights.map((x,i)=>`<div class="food"${i===t.highlights.length-1?' style="border:none"':''}><span class="fn">${esc(x)}</span></div>`).join('')+'</div>'+
+    '<div class="note" style="margin-top:11px">这趟还在"建议"阶段——完整逐日攻略、餐厅、清单都在上面的 Google 文档里，定了日期我就把它升级成像旧金山那样的逐日卡片。</div></div>';}
+  if(t.checklist){const p=prog(t);h+=`<div class="block"><h3>✅ 出发前清单 <span style="color:var(--muted);font-weight:600;font-size:13px">${p.done}/${p.total}</span></h3><div class="card" style="padding:4px 15px" id="cl">`+
+    t.checklist.map(c=>{const on=CHK[t.id+'::'+c[0]];return `<div class="chk ${on?'on':''}" data-k="${t.id}::${c[0]}"><div class="box">${on?'✓':''}</div><div class="ctx">${esc(c[1])}${c[2]?`<small>${esc(c[2])}</small>`:''}</div></div>`;}).join('')+'</div></div>';}
+  if(t.food){h+='<div class="block"><h3>🍽️ 吃什么</h3><div class="card" style="padding:4px 15px">'+
+    t.food.map(f=>`<div class="food"><span class="fn">${esc(f[0])}</span><span class="fd">${esc(f[1])}</span></div>`).join('')+'</div></div>';}
+  if(t.tips){h+='<div class="block"><h3>💡 避坑提示</h3><ul class="tips">'+t.tips.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul></div>';}
+  h+='</div>';view.innerHTML=h;
+  view.querySelectorAll('.chk').forEach(el=>el.onclick=()=>{const k=el.dataset.k;CHK[k]=!CHK[k];saveChk();renderTrip(id);});
+}
+function renderLists(){
+  setTabs('#/lists');bar.querySelector('h1').textContent='出发前清单';barsub.textContent='';showBack(false);
+  let h='<div class="wrap fade">';let any=false;
+  [...TRIPS].sort((a,b)=>a.start.localeCompare(b.start)).forEach(t=>{if(!t.checklist)return;any=true;const p=prog(t);
+    h+=`<div class="lgrp"><div class="lh">${t.emoji} ${t.name} <span style="color:var(--muted);font-weight:600">${p.done}/${p.total}</span></div><div class="card" style="padding:4px 15px">`+
+    t.checklist.map(c=>{const on=CHK[t.id+'::'+c[0]];return `<div class="chk ${on?'on':''}" data-k="${t.id}::${c[0]}"><div class="box">${on?'✓':''}</div><div class="ctx">${esc(c[1])}${c[2]?`<small>${esc(c[2])}</small>`:''}</div></div>`;}).join('')+'</div></div>';});
+  if(!any)h+='<div class="note">还没有清单项。</div>';
+  h+='<div class="foot">勾选会记住（存在这台设备上）</div></div>';view.innerHTML=h;
+  view.querySelectorAll('.chk').forEach(el=>el.onclick=()=>{const k=el.dataset.k;CHK[k]=!CHK[k];saveChk();renderLists();});
+}
+function fmt(s){const[y,m,d]=s.split('-');const w=['周日','周一','周二','周三','周四','周五','周六'][new Date(s+'T00:00:00').getDay()];return (+m)+'/'+(+d)+' '+w;}
+function showBack(on){const ex=bar.querySelector('.back');if(on&&!ex){const b=document.createElement('button');b.className='back';b.innerHTML='‹ 返回';b.onclick=()=>history.length>1?history.back():location.hash='#/';bar.insertBefore(b,bar.firstChild);}if(!on&&ex)ex.remove();}
+function setTabs(hash){document.querySelectorAll('.tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.go===hash));}
+document.querySelectorAll('.tabbar a').forEach(a=>a.onclick=()=>{const g=a.dataset.go;if(g==='__docs__')window.open(FOLDER,'_blank');else location.hash=g;});
+function route(){const h=location.hash||'#/';if(h.startsWith('#/t/'))renderTrip(h.slice(4));else if(h==='#/lists')renderLists();else renderHome();window.scrollTo(0,0);}
+window.addEventListener('hashchange',route);route();
+try{const mf={name:'我们的旅行',short_name:'我们的旅行',start_url:'.',display:'standalone',background_color:'#f4f5f3',theme_color:'#0e7490',icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" rx="96" fill="#0e7490"/><text x="50%" y="54%" font-size="300" text-anchor="middle" dominant-baseline="middle">🧳</text></svg>'),sizes:'512x512',type:'image/svg+xml'}]};const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));document.head.appendChild(l);}catch(e){}
+</script>
+</body>
+</html>
