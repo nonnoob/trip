@@ -390,7 +390,7 @@ function loadWeather(id,start,el){const g=GEO[id];if(!g){el.textContent='—';re
      el.innerHTML=s;el.style.color='var(--ink)';
    }).catch(()=>{el.textContent='实时天气暂不可用（可能离线）。';});}
 function gcal(t){const s=t.start.replace(/-/g,'');const e=new Date(t.start+'T00:00:00');e.setDate(e.getDate()+(t.days||1));const ee=`${e.getFullYear()}${String(e.getMonth()+1).padStart(2,'0')}${String(e.getDate()).padStart(2,'0')}`;return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('🧳 '+t.name+' '+t.en)}&dates=${s}/${ee}&details=${encodeURIComponent('行程 App: https://nonnoob.github.io/trip/#/t/'+t.id)}`;}
-function embedFromRoute(u){try{const q=new URL(u).searchParams;const o=q.get('origin'),de=q.get('destination'),wp=(q.get('waypoints')||'').split('|').filter(Boolean);const daddr=[...wp,de].join(' to ');return 'https://maps.google.com/maps?output=embed&saddr='+encodeURIComponent(o)+'&daddr='+encodeURIComponent(daddr);}catch(e){return null;}}
+function embedFromRoute(u){try{const q=new URL(u).searchParams;const center=q.get('origin')||q.get('destination');return 'https://maps.google.com/maps?q='+encodeURIComponent(center)+'&z=13&output=embed';}catch(e){return null;}}
 function renderLists(){
   setTabs('#/lists');bar.querySelector('h1').textContent='出发前清单';barsub.textContent='';showBack(false);
   let h='<div class="wrap fade">';
