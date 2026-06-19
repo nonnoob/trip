@@ -28,16 +28,22 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .appbar h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
 .appbar .sub{font-size:12px;color:var(--muted);margin-left:auto}
 .back{border:none;background:none;color:var(--accent-ink);font-size:15px;display:flex;align-items:center;gap:4px;padding:0;cursor:pointer;font-weight:600}
-.wrap{padding:16px 16px 8px}
-.hero{background:linear-gradient(135deg,var(--accent),#0b5c73);color:#fff;border-radius:20px;padding:18px 18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.wrap{padding:14px 16px 8px}
+.greet{font-size:12.5px;color:var(--muted);margin:0 4px 10px}
+.hero{background:linear-gradient(135deg,var(--accent),#0b5c73);color:#fff;border-radius:20px;padding:18px 18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;cursor:pointer}
 .hero .lab{font-size:12px;opacity:.86;letter-spacing:.4px}
 .hero .nm{font-size:19px;font-weight:700;margin:2px 0 8px}
 .hero .big{font-size:34px;font-weight:800;line-height:1;letter-spacing:.5px}
 .hero .big small{font-size:14px;font-weight:600;opacity:.85;margin-left:6px}
 .hero .meta{font-size:13px;opacity:.9;margin-top:10px}
-.hero .go{margin-top:14px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.hero .go{margin-top:14px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600}
 .hero .glow{position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)}
-.sec{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin:20px 4px 10px;text-transform:none}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 2px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:13px 6px 11px;text-align:center;cursor:pointer}
+.tile .ic2{font-size:21px;line-height:1}
+.tile .tl{font-size:12px;font-weight:700;margin-top:6px}
+.tile .ts{font-size:10px;color:var(--muted);margin-top:1px}
+.sec{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin:20px 4px 10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
 .trip{display:flex;align-items:center;gap:13px;padding:14px 15px;cursor:pointer;border-bottom:1px solid var(--line)}
 .trip:last-child{border-bottom:none}
@@ -84,6 +90,14 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .food{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px}
 .food:last-child{border-bottom:none}
 .food .fn{font-weight:600} .food .fd{color:var(--muted);font-size:12.5px;text-align:right}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:4px 15px;margin-bottom:6px}
+.gli{padding:10px 1px;border-bottom:1px solid var(--line);font-size:13.5px;line-height:1.55}
+.gli:last-child{border-bottom:none}
+.gli b{font-weight:700}
+.mini{display:flex;align-items:center;gap:10px;padding:9px 1px;border-bottom:1px solid var(--line);font-size:13.5px}
+.mini:last-child{border-bottom:none}
+.mini .k{font-weight:600;flex:0 0 auto}
+.mini .v{margin-left:auto;color:var(--muted);text-align:right}
 .tips li{font-size:13.5px;margin:5px 0;color:var(--ink)}
 .tips{padding-left:18px;margin:6px 0}
 .tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
@@ -102,6 +116,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
   <div id="view"></div>
   <div class="tabbar" id="tabs">
     <a data-go="#/" class="on"><span class="i">🗓️</span>行程</a>
+    <a data-go="#/guide"><span class="i">🧭</span>攻略</a>
     <a data-go="#/lists"><span class="i">✅</span>清单</a>
     <a data-go="__docs__"><span class="i">📄</span>文档</a>
   </div>
@@ -161,15 +176,96 @@ const TRIPS=[
   doc:DOC('1QttUBiz-jyf1atWSR9rq7_0ROFFtw05LO6SPilVbu24'),
   highlights:['千禧公园云门"豆子"','建筑游船看摩天楼','深盘披萨 + 芝加哥热狗','密歇根湖滨步道','艺术博物馆 + 威利斯塔']}
 ];
+const OVERVIEW={
+ doc:DOC('1JohIUWkRZvSyUDrOADmRUB3gCOTcWKf4FTluVoqDUs0'),
+ principle:'尔湾出发 · 情侣两人 · 轻松不赶。已定的按真实日期排，其余按各地最佳季节给建议、可自由调整。',
+ season:[
+  ['🌲 西雅图（8月）','全年最干爽，Rainier 高山野花盛开，窗口最窄、优先锁定'],
+  ['🦬 黄石+大提顿（9月初）','游客比盛夏少、天气仍好、动物活跃；园内住宿提前 6–12 月抢'],
+  ['🎈 阿尔伯克基（10月）','正赶国际热气球节 2026/10/3–11，全年最值得来的时刻'],
+  ['🗽 纽约（12月）','圣诞假日季氛围最佳（也可改 10 月看秋叶、更舒适）'],
+  ['🏙️ 芝加哥（6月）','初夏湖滨宜人、节庆开始、未到盛夏闷热']
+ ],
+ booking:[
+  ['✈️ 机票','远途提前 6–10 周；旺季(暑假/圣诞/气球节) 3–6 个月；SNA 与 LAX 比价'],
+  ['🏞️ 年票 $80','一年覆盖优胜美地+黄石+Rainier/Olympic，去 2 个就回本'],
+  ['🦬 黄石园内住宿','放票数小时售罄，提前 6–12 月；订不到就住西黄石/Gardiner'],
+  ['🎈 气球节酒店','2026/10/3–11 暴涨，提前 3–6 个月订'],
+  ['💦 优胜美地','2026 全年免预约(只需门票)；7/3 逢独立日长周末超挤，早 6 点前出发']
+ ],
+ drive:[
+  ['优胜美地','🚗 自驾 ~315mi / 5.5–6h'],
+  ['旧金山','✈️ 去 + 🚆 海岸星光号回（平时可自驾 ~6h）'],
+  ['阿尔伯克基','🚗 Route 66 ~810mi/12h 或 ✈️ 1.5h'],
+  ['黄石','✈️ 飞 Bozeman 落地租车'],
+  ['西雅图','✈️ 飞 + 当地租车'],
+  ['纽约 / 芝加哥','✈️ 飞，市内地铁/步行']
+ ]
+};
+const GUIDE={
+ doc:DOC('1_h2t_Szvmx81tMG3RXwnfxrRfe3KpQNv4oePE13lMTg'),
+ quick:[
+  '💳 $80 年票：一年覆盖优胜美地+黄石+Rainier，去 2 个就回本',
+  '✈️ 机票：远途提前 6–10 周、旺季 3–6 月；SNA 与 LAX 比价',
+  '🏨 看总价：当心度假费/停车费/税，优先订免费取消',
+  '🛡️ 安全：车内不留贵重物（SF/大城市），离线地图必备'
+ ],
+ sections:[
+  {t:'✈️ 订机票（从尔湾）',items:[
+   '机场：SNA 最近(~20min,航班少价稍高) · LAX 最便宜航班多(~45–60min) · ONT/LGB 备选',
+   'Google Flights 看价格趋势 + Track prices，比好价优先去航司官网直订',
+   '提前期：远途 6–10 周；旺季(暑假/圣诞/气球节) 3–6 月；周二三出发更便宜',
+   '看清舱位：Basic Economy 常不含托运/选座/改签；西南航空含行李可改签但只在官网卖',
+   '转机别选 <60 分钟衔接，能直飞优先直飞']},
+  {t:'🏨 订酒店（高性价比）',items:[
+   '比价 Booking/Hotels/Expedia（筛免费取消/含早/含停车）；连锁会员官网直订',
+   '位置 > 裸价：省下的车费/停车费/时间通常超过房价差',
+   '看总价防三费：度假费 $20–50/晚 · 停车 $30–70/晚(SF/纽约/芝加哥) · 税另加',
+   '尽量订免费取消；城市酒店周末更便宜，门户镇/度假地工作日更便宜',
+   '景区正门口溢价 30–50%，往里走一两街区便宜；差评隔音/治安的别订']},
+  {t:'🚗 租车 & 自驾',items:[
+   '在哪订：Costco Travel 常最便宜(含额外驾驶人)；AutoSlash/Kayak 比价、降了再改',
+   '取还：机场方便但 +10–15%；保险先查自有车险/信用卡是否含 CDW，没有就柜台买',
+   '异地还车费(如 BZN 进/JAC 出)订前算进去；加油选 Full to Full，别买预付油',
+   '车型：国家公园/山路用 SUV/AWD；柜台推销升级/加保多数用不上，礼貌拒绝',
+   '取车先绕车一圈拍照录像留证，避免还车背锅']},
+  {t:'🏞️ 国家公园年票 & 预约',items:[
+   '$80 年票(America the Beautiful)：一年覆盖黄石+大提顿+优胜美地+Rainier/Olympic，去 2 个回本',
+   '哪买：任一公园入口、REI 门店、USGS 官网',
+   'Recreation.gov 提前注册绑卡开提醒；优胜美地 2026 已取消车辆 timed-entry(仍需门票)，2027 再确认',
+   '园内住宿专属平台(最抢手)：黄石 yellowstonenationalparklodges.com、优胜美地 travelyosemite.com']},
+  {t:'💸 避坑 & 省钱',items:[
+   '小费：餐厅堂食 15–20%(先看是否已含 gratuity)；酒店行李/清洁 $2–5；网约车 10–15%',
+   '标价不含税(加州约 7.75–10.25%)；处处能刷卡，备点现金(老店/生蚝铺 cash only)',
+   '安全：车内不留贵重物(SF/大城市尤甚)、夜避偏僻区、贵重物用酒店保险箱',
+   '省钱：3+ 付费景点用 CityPASS/Go City(常省 40%+)；错峰早出门；正餐离景区一两街区',
+   '紧急电话 911']}
+ ]
+};
+const PACK={id:'pack',emoji:'🧳',name:'通用打包',checklist:[
+ ['p1','证件：驾照/护照 + 2 张信用卡 + 少量现金',''],
+ ['p2','$80 国家公园年票',''],
+ ['p3','手机 + 车充 + 充电宝、充电线、相机 + 存储卡',''],
+ ['p4','离线地图（国家公园无信号必备）',''],
+ ['p5','速干内层(别穿纯棉) + 抓绒 + 防风硬壳',''],
+ ['p6','步行/徒步鞋、墨镜、帽子、泳衣',''],
+ ['p7','常用药 / 防晒 SPF50 / 润唇膏 / 夏季驱蚊',''],
+ ['p8','保温水壶 / 零食 / 雨具 / 日间小背包 / 颈枕眼罩',''],
+ ['p9','行程确认号离线截图','']
+]};
 const ST={ok:['p-ok','✅'],plan:['p-plan','📅'],idea:['p-idea','💡']};
 const $=s=>document.querySelector(s);
 const view=$('#view'), bar=$('#bar'), barsub=$('#barsub');
 function daysTo(s){const t=new Date();t.setHours(0,0,0,0);const d=new Date(s+'T00:00:00');return Math.round((d-t)/864e5);}
-function cdText(n){return n>1?['还有',n+' 天']:n===1?['明天出发','✦']:n===0?['今天出发','✦']:n>-1?['','']:['已结束',''];}
+function cdText(n){return n>1?['还有',n+' 天']:n===1?['明天出发','✦']:n===0?['今天出发','✦']:['已结束',''];}
 let CHK={};try{CHK=JSON.parse(localStorage.getItem('trip_checks')||'{}')}catch(e){}
 function saveChk(){try{localStorage.setItem('trip_checks',JSON.stringify(CHK))}catch(e){}}
 function prog(t){if(!t.checklist)return null;const done=t.checklist.filter(c=>CHK[t.id+'::'+c[0]]).length;return{done,total:t.checklist.length};}
 function esc(s){return(s+'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function gi(s){const i=s.indexOf('：');return i>0?('<b>'+esc(s.slice(0,i+1))+'</b>'+esc(s.slice(i+1))):esc(s);}
+function chkHTML(o){return o.checklist.map(c=>{const on=CHK[o.id+'::'+c[0]];return `<div class="chk ${on?'on':''}" data-k="${o.id}::${c[0]}"><div class="box">${on?'✓':''}</div><div class="ctx">${esc(c[1])}${c[2]?`<small>${esc(c[2])}</small>`:''}</div></div>`;}).join('');}
+function bindChk(re){view.querySelectorAll('.chk').forEach(el=>el.onclick=()=>{CHK[el.dataset.k]=!CHK[el.dataset.k];saveChk();re();});}
+function bindGo(){view.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>{const g=el.dataset.go;if(g==='__docs__')window.open(FOLDER,'_blank');else location.hash=g;});}
 
 function renderHome(){
   setTabs('#/');bar.querySelector('h1').textContent='我们的旅行';showBack(false);
@@ -179,21 +275,30 @@ function renderHome(){
   barsub.textContent=booked+' 程已定 · '+(TRIPS.length-booked)+' 程规划中';
   const [a,bb]=cdText(daysTo(next.start));
   let h='<div class="wrap fade">';
-  h+=`<div class="hero" onclick="location.hash='#/t/${next.id}'"><div class="glow"></div>
+  h+='<div class="greet">尔湾出发 · 情侣两人 · 轻松不赶</div>';
+  h+=`<div class="hero" data-go="#/t/${next.id}"><div class="glow"></div>
     <div class="lab">下一程</div><div class="nm">${next.emoji} ${next.name} ${next.en}</div>
     <div class="big">${a}${bb&&bb!=='✦'?'<small>'+bb+'</small>':''}</div>
     <div class="meta">${fmt(next.start)} · ${next.days} 天 · ${esc(next.transport)}</div>
     <span class="go">查看行程 →</span></div>`;
+  h+=`<div class="tiles">
+    <div class="tile" data-go="#/overview"><div class="ic2">🗺️</div><div class="tl">排期 & 季节</div><div class="ts">为什么这么排</div></div>
+    <div class="tile" data-go="#/guide"><div class="ic2">🧭</div><div class="tl">通用攻略</div><div class="ts">订票订房打包</div></div>
+    <div class="tile" data-go="__docs__"><div class="ic2">📄</div><div class="tl">全部文档</div><div class="ts">Google Drive</div></div>
+  </div>`;
   h+='<div class="sec">全部行程</div><div class="card">';
   sorted.forEach(t=>{const st=ST[t.status];const p=prog(t);
-    h+=`<div class="trip" onclick="location.hash='#/t/${t.id}'">
+    h+=`<div class="trip" data-go="#/t/${t.id}">
       <div class="ic">${t.emoji}</div>
       <div class="tx"><div class="t1">${t.name} <span style="color:var(--muted);font-weight:600;font-size:13px">${t.en}</span></div>
       <div class="t2">${fmt(t.start)} · ${t.days} 天 · <span class="pill ${st[0]}">${st[1]} ${esc(t.statusText)}</span></div>
       ${p?`<div class="prog"><i style="width:${p.total?Math.round(p.done/p.total*100):0}%"></i></div>`:''}</div>
       <div class="ch">›</div></div>`;});
-  h+='</div><div class="foot">数据来自你的旅行工作区 · 点任意行程看逐日安排、地图与清单<br>这是原型；部署后可"添加到主屏"像 App 一样用</div></div>';
-  view.innerHTML=h;
+  h+='</div>';
+  h+='<div class="sec">出行前必看</div><div class="gcard">'+GUIDE.quick.map(q=>`<div class="gli">${gi(q)}</div>`).join('')+'</div>';
+  h+=`<div class="docbtn" data-go="#/guide">🧭 打开通用攻略（机票/酒店/租车/年票/打包/避坑）</div>`;
+  h+='<div class="foot">数据来自你的旅行工作区 · 想加或改内容告诉我即可</div></div>';
+  view.innerHTML=h;bindGo();
 }
 function renderTrip(id){
   const t=TRIPS.find(x=>x.id===id);if(!t)return renderHome();
@@ -212,29 +317,46 @@ function renderTrip(id){
   if(t.highlights){h+='<div class="block"><h3>✨ 亮点抢先看</h3><div class="card" style="padding:6px 15px">'+
     t.highlights.map((x,i)=>`<div class="food"${i===t.highlights.length-1?' style="border:none"':''}><span class="fn">${esc(x)}</span></div>`).join('')+'</div>'+
     '<div class="note" style="margin-top:11px">这趟还在"建议"阶段——完整逐日攻略、餐厅、清单都在上面的 Google 文档里，定了日期我就把它升级成像旧金山那样的逐日卡片。</div></div>';}
-  if(t.checklist){const p=prog(t);h+=`<div class="block"><h3>✅ 出发前清单 <span style="color:var(--muted);font-weight:600;font-size:13px">${p.done}/${p.total}</span></h3><div class="card" style="padding:4px 15px" id="cl">`+
-    t.checklist.map(c=>{const on=CHK[t.id+'::'+c[0]];return `<div class="chk ${on?'on':''}" data-k="${t.id}::${c[0]}"><div class="box">${on?'✓':''}</div><div class="ctx">${esc(c[1])}${c[2]?`<small>${esc(c[2])}</small>`:''}</div></div>`;}).join('')+'</div></div>';}
+  if(t.checklist){const p=prog(t);h+=`<div class="block"><h3>✅ 出发前清单 <span style="color:var(--muted);font-weight:600;font-size:13px">${p.done}/${p.total}</span></h3><div class="card" style="padding:4px 15px">`+chkHTML(t)+'</div></div>';}
   if(t.food){h+='<div class="block"><h3>🍽️ 吃什么</h3><div class="card" style="padding:4px 15px">'+
     t.food.map(f=>`<div class="food"><span class="fn">${esc(f[0])}</span><span class="fd">${esc(f[1])}</span></div>`).join('')+'</div></div>';}
   if(t.tips){h+='<div class="block"><h3>💡 避坑提示</h3><ul class="tips">'+t.tips.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul></div>';}
-  h+='</div>';view.innerHTML=h;
-  view.querySelectorAll('.chk').forEach(el=>el.onclick=()=>{const k=el.dataset.k;CHK[k]=!CHK[k];saveChk();renderTrip(id);});
+  h+='</div>';view.innerHTML=h;bindChk(()=>renderTrip(id));
+}
+function renderOverview(){
+  setTabs('#/');bar.querySelector('h1').textContent='排期 & 季节';barsub.textContent='';showBack(true);
+  let h='<div class="wrap fade"><div class="dhero"><div style="font-size:28px">🗺️</div><div class="dtitle">排期 & 季节逻辑</div></div>';
+  h+=`<div class="note" style="margin-top:8px">${esc(OVERVIEW.principle)}</div>`;
+  h+=`<a class="docbtn" href="${OVERVIEW.doc}" target="_blank" rel="noopener" style="margin-top:12px">📄 打开完整总览（Google 文档）</a>`;
+  h+='<div class="block"><h3>🌦️ 为什么排在那个月</h3><div class="gcard">'+OVERVIEW.season.map(s=>`<div class="gli"><b>${esc(s[0])}</b><br>${esc(s[1])}</div>`).join('')+'</div></div>';
+  h+='<div class="block"><h3>⏰ 预订时间线</h3><div class="gcard">'+OVERVIEW.booking.map(s=>`<div class="gli"><b>${esc(s[0])}</b><br>${esc(s[1])}</div>`).join('')+'</div></div>';
+  h+='<div class="block"><h3>🚗 怎么去（自驾 vs 飞）</h3><div class="gcard">'+OVERVIEW.drive.map(s=>`<div class="mini"><span class="k">${esc(s[0])}</span><span class="v">${esc(s[1])}</span></div>`).join('')+'</div></div>';
+  h+='<div class="foot">完整排期与季节解释见上方总览文档</div></div>';
+  view.innerHTML=h;bindGo();
+}
+function renderGuide(){
+  setTabs('#/guide');bar.querySelector('h1').textContent='通用攻略';barsub.textContent='';showBack(false);
+  let h='<div class="wrap fade"><div class="dhero"><div style="font-size:28px">🧭</div><div class="dtitle">通用攻略</div><div style="color:var(--muted);font-size:13px;margin-top:2px">订机票 / 订房 / 租车 / 年票 / 打包 / 避坑 —— 所有行程通用</div></div>';
+  h+=`<a class="docbtn" href="${GUIDE.doc}" target="_blank" rel="noopener" style="margin-top:12px">📄 打开完整通用攻略（Google 文档）</a>`;
+  GUIDE.sections.forEach(sec=>{h+=`<div class="block"><h3>${sec.t}</h3><div class="gcard">`+sec.items.map(x=>`<div class="gli">${gi(x)}</div>`).join('')+'</div></div>';});
+  const p=prog(PACK);
+  h+=`<div class="block"><h3>🧳 通用打包清单 <span style="color:var(--muted);font-weight:600;font-size:13px">${p.done}/${p.total}</span></h3><div class="card" style="padding:4px 15px">`+chkHTML(PACK)+'</div></div>';
+  h+='<div class="foot">勾选会记住（存在这台设备上）· 更细节看完整文档</div></div>';
+  view.innerHTML=h;bindChk(renderGuide);
 }
 function renderLists(){
   setTabs('#/lists');bar.querySelector('h1').textContent='出发前清单';barsub.textContent='';showBack(false);
-  let h='<div class="wrap fade">';let any=false;
-  [...TRIPS].sort((a,b)=>a.start.localeCompare(b.start)).forEach(t=>{if(!t.checklist)return;any=true;const p=prog(t);
-    h+=`<div class="lgrp"><div class="lh">${t.emoji} ${t.name} <span style="color:var(--muted);font-weight:600">${p.done}/${p.total}</span></div><div class="card" style="padding:4px 15px">`+
-    t.checklist.map(c=>{const on=CHK[t.id+'::'+c[0]];return `<div class="chk ${on?'on':''}" data-k="${t.id}::${c[0]}"><div class="box">${on?'✓':''}</div><div class="ctx">${esc(c[1])}${c[2]?`<small>${esc(c[2])}</small>`:''}</div></div>`;}).join('')+'</div></div>';});
-  if(!any)h+='<div class="note">还没有清单项。</div>';
-  h+='<div class="foot">勾选会记住（存在这台设备上）</div></div>';view.innerHTML=h;
-  view.querySelectorAll('.chk').forEach(el=>el.onclick=()=>{const k=el.dataset.k;CHK[k]=!CHK[k];saveChk();renderLists();});
+  let h='<div class="wrap fade">';
+  const groups=[PACK,...[...TRIPS].sort((a,b)=>a.start.localeCompare(b.start)).filter(t=>t.checklist)];
+  groups.forEach(o=>{const p=prog(o);
+    h+=`<div class="lgrp"><div class="lh">${o.emoji} ${o.name} <span style="color:var(--muted);font-weight:600">${p.done}/${p.total}</span></div><div class="card" style="padding:4px 15px">`+chkHTML(o)+'</div></div>';});
+  h+='<div class="foot">勾选会记住（存在这台设备上）</div></div>';view.innerHTML=h;bindChk(renderLists);
 }
 function fmt(s){const[y,m,d]=s.split('-');const w=['周日','周一','周二','周三','周四','周五','周六'][new Date(s+'T00:00:00').getDay()];return (+m)+'/'+(+d)+' '+w;}
 function showBack(on){const ex=bar.querySelector('.back');if(on&&!ex){const b=document.createElement('button');b.className='back';b.innerHTML='‹ 返回';b.onclick=()=>history.length>1?history.back():location.hash='#/';bar.insertBefore(b,bar.firstChild);}if(!on&&ex)ex.remove();}
 function setTabs(hash){document.querySelectorAll('.tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.go===hash));}
 document.querySelectorAll('.tabbar a').forEach(a=>a.onclick=()=>{const g=a.dataset.go;if(g==='__docs__')window.open(FOLDER,'_blank');else location.hash=g;});
-function route(){const h=location.hash||'#/';if(h.startsWith('#/t/'))renderTrip(h.slice(4));else if(h==='#/lists')renderLists();else renderHome();window.scrollTo(0,0);}
+function route(){const h=location.hash||'#/';if(h.startsWith('#/t/'))renderTrip(h.slice(4));else if(h==='#/guide')renderGuide();else if(h==='#/overview')renderOverview();else if(h==='#/lists')renderLists();else renderHome();window.scrollTo(0,0);}
 window.addEventListener('hashchange',route);route();
 try{const mf={name:'我们的旅行',short_name:'我们的旅行',start_url:'.',display:'standalone',background_color:'#f4f5f3',theme_color:'#0e7490',icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" rx="96" fill="#0e7490"/><text x="50%" y="54%" font-size="300" text-anchor="middle" dominant-baseline="middle">🧳</text></svg>'),sizes:'512x512',type:'image/svg+xml'}]};const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));document.head.appendChild(l);}catch(e){}
 </script>
