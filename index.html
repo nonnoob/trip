@@ -128,7 +128,9 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .it.meal .dot{background:var(--plan-i);box-shadow:0 0 0 3px var(--plan-b)}
 .it.meal .ct .h{font-size:13.5px;font-weight:700}
 .opt{font-size:10px;color:var(--plan-i);background:var(--plan-b);border-radius:6px;padding:1px 6px;margin-left:5px;vertical-align:1px}
-.fcard{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px}
+.fcard{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px;cursor:pointer}
+.fcard:active{background:var(--accent-soft)}
+.pick{color:var(--accent-ink);font-weight:600;cursor:pointer}
 .fcard .fh{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .fcard .fn2{font-size:15px;font-weight:700}
 .fcard .fp{font-size:12px;color:var(--accent-ink);font-weight:700;white-space:nowrap}
@@ -385,7 +387,7 @@ function renderTrip(id){
       let tl='<div class="tl">';
       d.items.forEach((it,ii)=>{const hd=DETAIL[t.id]&&DETAIL[t.id][it[1]];const leg=legs&&legs[ii];
         tl+=`<div class="it${hd?' tap':''}"${hd?` data-go="#/s/${t.id}/${di}/${ii}"`:''}><div class="tm">${esc(it[0])}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct">${leg?`<div class="legtag">${esc(leg)}</div>`:''}<div class="h">${esc(it[1])}${hd?' <span class="more">详情 ›</span>':''}</div>${it[2]?`<div class="n">${esc(it[2])}</div>`:''}</div></div>`;
-        dmeals.filter(m=>m.after===ii).forEach(m=>{tl+=`<div class="it meal"><div class="tm">${esc(m.t||'')}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct"><div class="h">🍴 ${esc(m.k||'用餐')}<span class="opt">可选</span></div><div class="n">${esc(m.near||'')}${m.picks&&m.picks.length?'　附近：'+m.picks.map(esc).join('、'):''}</div></div></div>`;});
+        dmeals.filter(m=>m.after===ii).forEach(m=>{const fl=(FX[t.id]&&FX[t.id].food)||[];const pl=(m.picks||[]).map(p=>{const fi=fl.findIndex(x=>x.n===p);return fi>=0?`<a class="pick" data-go="#/r/${t.id}/${fi}">${esc(p)} ›</a>`:esc(p);}).join('、');tl+=`<div class="it meal"><div class="tm">${esc(m.t||'')}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct"><div class="h">🍴 ${esc(m.k||'用餐')}<span class="opt">可选</span></div><div class="n">${esc(m.near||'')}${m.picks&&m.picks.length?'　附近：'+pl:''}</div></div></div>`;});
       });
       h+=tl+'</div></div>';});
     h+='</div>';}
@@ -393,7 +395,7 @@ function renderTrip(id){
     t.highlights.map((x,i)=>`<div class="food"${i===t.highlights.length-1?' style="border:none"':''}><span class="fn">${esc(x)}</span></div>`).join('')+'</div>'+
     '<div class="note" style="margin-top:11px">这趟还在"建议"阶段——完整逐日攻略、餐厅、清单都在上面的 Google 文档里，定了日期我就把它升级成像旧金山那样的逐日卡片。</div></div>';}
   if(t.checklist){const p=prog(t);h+=`<div class="block"><h3>✅ 出发前清单 <span style="color:var(--muted);font-weight:600;font-size:13px">${p.done}/${p.total}</span></h3><div class="card" style="padding:4px 15px">`+chkHTML(t)+'</div></div>';}
-  if(FX[t.id]&&FX[t.id].food){h+='<div class="block"><h3>🍽️ 吃什么（餐厅推荐）</h3>'+FX[t.id].food.map(f=>`<div class="fcard"><div class="fh"><span class="fn2">${esc(f.n)}</span><span class="fp">${esc(f.price||'')}</span></div><div class="fa">${esc(f.area||'')}</div>${f.intro?`<div class="fi">${esc(f.intro)}</div>`:''}${f.dishes&&f.dishes.length?`<div class="fdish">${f.dishes.map(d=>`<span>${esc(d)}</span>`).join('')}</div>`:''}</div>`).join('')+'</div>';}
+  if(FX[t.id]&&FX[t.id].food){h+='<div class="block"><h3>🍽️ 吃什么（点开看详情）</h3>'+FX[t.id].food.map((f,fi)=>`<div class="fcard" data-go="#/r/${t.id}/${fi}"><div class="fh"><span class="fn2">${esc(f.n)} <span class="more">›</span></span><span class="fp">${esc(f.price||'')}</span></div><div class="fa">${esc(f.area||'')}</div>${f.dishes&&f.dishes.length?`<div class="fdish" style="margin-top:7px">${f.dishes.map(d=>`<span>${esc(d)}</span>`).join('')}</div>`:''}</div>`).join('')+'</div>';}
   else if(t.food){h+='<div class="block"><h3>🍽️ 吃什么</h3><div class="card" style="padding:4px 15px">'+
     t.food.map(f=>`<div class="food"><span class="fn">${esc(f[0])}</span><span class="fd">${esc(f[1])}</span></div>`).join('')+'</div></div>';}
   if(t.tips){h+='<div class="block"><h3>💡 避坑提示</h3><ul class="tips">'+t.tips.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul></div>';}
@@ -455,6 +457,23 @@ function downloadICS(t){
   const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ourtrip//cn','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+t.id+'@ourtrip','DTSTAMP:'+d+'T000000Z','DTSTART;VALUE=DATE:'+d,'DTEND;VALUE=DATE:'+ed,'SUMMARY:'+t.emoji+' '+t.name+' 出发','DESCRIPTION:行程 '+SITE+'#/t/'+t.id,'BEGIN:VALARM','TRIGGER:-P7D','ACTION:DISPLAY','DESCRIPTION:一周后出发 '+t.name,'END:VALARM','BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:明天出发 '+t.name,'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download=t.id+'-'+t.name+'.ics';document.body.appendChild(a);a.click();a.remove();
 }
+function renderResto(tid,idx){
+  const t=TRIPS.find(x=>x.id===tid),f=FX[tid]&&FX[tid].food&&FX[tid].food[idx];
+  if(!t||!f)return renderHome();
+  setTabs('');bar.querySelector('h1').textContent=t.name;barsub.textContent='';showBack(true);
+  const q=encodeURIComponent((f.n+' '+(f.area||'')+' '+t.name).replace(/（[^）]*）/g,' '));
+  let h='<div class="wrap fade"><div class="dhero">';
+  h+=`<div style="font-size:12px;color:var(--muted);font-weight:700">${t.emoji} ${esc(t.name)} · 餐厅</div>`;
+  h+=`<div class="dtitle" style="font-size:22px">${esc(f.n)}</div>`;
+  if(f.area)h+=`<div style="color:var(--muted);font-size:13px">${esc(f.area)}</div>`;
+  if(f.price)h+=`<div class="chips" style="margin-top:10px"><span class="chip">💰 <b>${esc(f.price)}</b></span></div>`;
+  h+='</div>';
+  if(f.intro)h+=`<div class="block"><div class="prose">${esc(f.intro)}</div></div>`;
+  if(f.dishes&&f.dishes.length)h+='<div class="block"><h3>🍴 推荐菜</h3><div class="fdish" style="padding:2px">'+f.dishes.map(d=>`<span>${esc(d)}</span>`).join('')+'</div></div>';
+  h+=`<a class="docbtn" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">📍 在 Google 地图上找这家</a>`;
+  h+=`<div class="docbtn" data-go="#/t/${t.id}">← 返回 ${esc(t.name)} 行程</div>`;
+  h+='</div>';view.innerHTML=h;bindGo();
+}
 function renderOverview(){
   setTabs('#/');bar.querySelector('h1').textContent='排期 & 季节';barsub.textContent='';showBack(true);
   let h='<div class="wrap fade"><div class="dhero"><div style="font-size:28px">🗺️</div><div class="dtitle">排期 & 季节逻辑</div></div>';
@@ -488,7 +507,7 @@ function fmt(s){const[y,m,d]=s.split('-');const w=['周日','周一','周二','�
 function showBack(on){const ex=bar.querySelector('.back');if(on&&!ex){const b=document.createElement('button');b.className='back';b.innerHTML='‹ 返回';b.onclick=()=>history.length>1?history.back():location.hash='#/';bar.insertBefore(b,bar.firstChild);}if(!on&&ex)ex.remove();}
 function setTabs(hash){document.querySelectorAll('.tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.go===hash));}
 document.querySelectorAll('.tabbar a').forEach(a=>a.onclick=()=>{const g=a.dataset.go;if(g==='__docs__')window.open(FOLDER,'_blank');else location.hash=g;});
-function route(){const h=location.hash||'#/';if(h.startsWith('#/s/')){const p=h.slice(4).split('/');renderStop(p[0],+p[1],+p[2]);}else if(h.startsWith('#/t/'))renderTrip(h.slice(4));else if(h==='#/guide')renderGuide();else if(h==='#/overview')renderOverview();else if(h==='#/lists')renderLists();else renderHome();window.scrollTo(0,0);}
+function route(){const h=location.hash||'#/';if(h.startsWith('#/s/')){const p=h.slice(4).split('/');renderStop(p[0],+p[1],+p[2]);}else if(h.startsWith('#/r/')){const p=h.slice(4).split('/');renderResto(p[0],+p[1]);}else if(h.startsWith('#/t/'))renderTrip(h.slice(4));else if(h==='#/guide')renderGuide();else if(h==='#/overview')renderOverview();else if(h==='#/lists')renderLists();else renderHome();window.scrollTo(0,0);}
 window.addEventListener('hashchange',route);route();
 try{const mf={name:'我们的旅行',short_name:'我们的旅行',start_url:'.',display:'standalone',background_color:'#f4f5f3',theme_color:'#0e7490',icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" rx="96" fill="#0e7490"/><text x="50%" y="54%" font-size="300" text-anchor="middle" dominant-baseline="middle">🧳</text></svg>'),sizes:'512x512',type:'image/svg+xml'}]};const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));document.head.appendChild(l);}catch(e){}
 </script>
