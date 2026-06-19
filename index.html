@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="我们的旅行">
 <title>我们的旅行</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{
   --bg:#f4f5f3; --card:#ffffff; --ink:#1b1c1a; --muted:#6c6e69; --line:#e7e8e4;
@@ -24,7 +26,7 @@
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
 #app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:78px}
-.appbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;gap:10px}
+.appbar{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;gap:10px}
 .appbar h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
 .appbar .sub{font-size:12px;color:var(--muted);margin-left:auto}
 .back{border:none;background:none;color:var(--accent-ink);font-size:15px;display:flex;align-items:center;gap:4px;padding:0;cursor:pointer;font-weight:600}
@@ -61,15 +63,27 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;color:var(--ink);box-shadow:var(--shadow)}
 .chip b{font-weight:700}
-.docbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:12px 0 2px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:13px;padding:12px;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer}
+.cd{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:13px;padding:10px 14px;margin:12px 0 2px}
+.cd .cdn{font-size:17px;font-weight:800;color:var(--accent-ink)}
+.icsbtn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap}
+.docbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 2px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:13px;padding:12px;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer}
 .block{margin:18px 0}
 .block h3{font-size:15px;margin:0 0 9px;display:flex;align-items:center;gap:7px;font-weight:700}
 .note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 13px 13px 0;padding:11px 14px;font-size:13.5px;color:var(--ink);box-shadow:var(--shadow)}
+.wx{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:11px 14px}
+.wx .now{font-size:30px;line-height:1;flex:0 0 auto}
+.wx .tnow{font-size:20px;font-weight:800}
+.wx .wmeta{font-size:12px;color:var(--muted)}
+.wxf{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px}
+.wxf .d{flex:0 0 auto;width:52px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:7px 3px;box-shadow:var(--shadow)}
+.wxf .d .wd{font-size:10.5px;color:var(--muted)} .wxf .d .we{font-size:17px;margin:2px 0} .wxf .d .wt{font-size:11px;font-weight:700} .wxf .d .wt small{color:var(--muted);font-weight:400}
 .day{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px 15px;margin-bottom:13px}
 .day .dh{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .day .dh .dn{font-size:15px;font-weight:800}
 .day .dh .dd{font-size:12.5px;color:var(--muted)}
-.route{margin:9px 0 12px;display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border-radius:11px;padding:9px 13px;font-size:13px;font-weight:700;text-decoration:none}
+.lmap{height:180px;border-radius:13px;overflow:hidden;border:1px solid var(--line);margin:9px 0 7px;position:relative;z-index:0}
+.navlink{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--accent-ink);font-weight:700;text-decoration:none;margin:0 0 10px}
+.lnum{background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
 .tl{position:relative;padding-left:4px}
 .it{display:flex;gap:11px;padding-bottom:4px}
 .it .tm{font-variant-numeric:tabular-nums;font-size:12px;color:var(--accent-ink);font-weight:700;width:42px;flex:0 0 auto;padding-top:2px}
@@ -100,22 +114,15 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .mini .v{margin-left:auto;color:var(--muted);text-align:right}
 .tips li{font-size:13.5px;margin:5px 0;color:var(--ink)}
 .tips{padding-left:18px;margin:6px 0}
-.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
 .tabbar a{flex:1;text-align:center;padding:9px 0 8px;color:var(--muted);text-decoration:none;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
 .tabbar a .i{font-size:20px;line-height:1}
 .tabbar a.on{color:var(--accent-ink);font-weight:700}
 .foot{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 20px 6px}
 .lgrp{margin:6px 0 16px}
 .lgrp .lh{font-size:13px;font-weight:800;margin:10px 4px 6px;display:flex;align-items:center;gap:7px}
-.map{width:100%;height:200px;border:1px solid var(--line);border-radius:12px;margin:9px 0 4px;display:block}
-.metric{background:var(--accent-soft);border-radius:16px;padding:14px 16px;margin-bottom:14px}
-.metric .ml{font-size:12px;color:var(--accent-ink);font-weight:700}
-.metric .mv{font-size:24px;font-weight:800;color:var(--accent-ink);margin-top:2px}
-.brow{display:flex;justify-content:space-between;gap:10px;padding:8px 1px;border-bottom:1px solid var(--line);font-size:13.5px}
-.brow:last-child{border-bottom:none}
-.brow .bv{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-.bsub{display:flex;justify-content:space-between;font-weight:700;padding:9px 1px 2px;font-size:13.5px}
 .fade{animation:f .22s ease}@keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.leaflet-container{font-family:inherit;background:var(--bg)}
 </style>
 </head>
 <body>
@@ -125,12 +132,13 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
   <div class="tabbar" id="tabs">
     <a data-go="#/" class="on"><span class="i">🗓️</span>行程</a>
     <a data-go="#/guide"><span class="i">🧭</span>攻略</a>
-    <a data-go="#/budget"><span class="i">💰</span>预算</a>
     <a data-go="#/lists"><span class="i">✅</span>清单</a>
+    <a data-go="__docs__"><span class="i">📄</span>文档</a>
   </div>
 </div>
 <script>
 const FOLDER='https://drive.google.com/drive/folders/1yHdkf6dKuEj6mfUEcsLlwWI4bvFyyo5Q';
+const SITE='https://nonnoob.github.io/trip/';
 const DOC=id=>'https://docs.google.com/document/d/'+id+'/edit';
 const TRIPS=[
  {id:'sf',emoji:'🌉',name:'旧金山',en:'San Francisco',start:'2026-06-19',days:3,status:'ok',statusText:'机/酒/火车票已订',
@@ -184,15 +192,20 @@ const TRIPS=[
   doc:DOC('1QttUBiz-jyf1atWSR9rq7_0ROFFtw05LO6SPilVbu24'),
   highlights:['千禧公园云门"豆子"','建筑游船看摩天楼','深盘披萨 + 芝加哥热狗','密歇根湖滨步道','艺术博物馆 + 威利斯塔']}
 ];
-const GEO={sf:[37.77,-122.42],yos:[37.745,-119.59],sea:[47.61,-122.33],yel:[44.46,-110.83],abq:[35.08,-106.65],nyc:[40.71,-74.0],chi:[41.88,-87.63]};
-const BUDGET={
- sf:{note:'机/酒/火车已订，下为参考', items:[['✈️ 机票 ×2',300,500],['🏨 酒店 ×2晚',400,700],['🚆 海岸星光号 ×2',120,200],['🍽️ 餐饮',250,400],['🚇 市内交通/门票',150,250]]},
- yos:{items:[['🚗 油费/车',120,180],['🏨 住宿 ×2晚',300,600],['🎟️ 门票/年票',35,80],['🍽️ 餐饮',150,300],['🧺 杂费',50,100]]},
- sea:{items:[['✈️ 机票 ×2',300,500],['🏨 酒店 ×4晚',700,1200],['🚗 租车 4天',250,400],['🍽️ 餐饮',400,700],['🎟️ 门票/活动',200,350]]},
- yel:{items:[['✈️ 机票 ×2',400,700],['🏨 住宿 ×5晚',900,1800],['🚗 租车 5天',350,600],['🍽️ 餐饮',500,800],['🎟️ 门票/年票',35,80]]},
- abq:{items:[['✈️/🚗 往返',200,500],['🏨 酒店 ×4晚·节期涨',800,1500],['🚗 租车',200,350],['🍽️ 餐饮',300,500],['🎈 气球节/活动',150,300]]},
- nyc:{items:[['✈️ 机票 ×2',350,600],['🏨 酒店 ×4晚',1000,2000],['🚇 交通',60,120],['🍽️ 餐饮',500,900],['🎭 门票/演出',300,600]]},
- chi:{items:[['✈️ 机票 ×2',300,500],['🏨 酒店 ×4晚',700,1300],['🚇 交通',60,120],['🍽️ 餐饮',400,700],['🎟️ 门票',200,400]]}
+const GEO={
+ sf:{coord:[37.7749,-122.4194],days:[
+   [[37.7880,-122.4074,'联合广场'],[37.7857,-122.4011,'SFMOMA'],[37.7908,-122.4056,'唐人街龙门'],[37.7849,-122.4080,'Powell 缆车'],[37.8021,-122.4187,'九曲花街'],[37.8058,-122.4216,'Buena Vista'],[37.8100,-122.4161,'机械博物馆'],[37.8080,-122.4177,'渔人码头'],[37.8087,-122.4098,'Crab House']],
+   [[37.8078,-122.4750,'金门大桥'],[37.8312,-122.4795,'Warming Hut'],[37.7699,-122.4661,'加州科学馆'],[37.7692,-122.4481,'Amoeba'],[37.7763,-122.4324,'彩绘女士'],[37.7596,-122.4269,'多洛雷斯公园'],[37.7510,-122.4181,'La Taqueria']],
+   null]},
+ yos:{coord:[37.7456,-119.5936],days:[
+   [[37.5150,-119.6010,'Mariposa Grove'],[37.7156,-119.6773,'Tunnel View']],
+   [[37.7320,-119.5580,'Mist Trail'],[37.7275,-119.5736,'Glacier Point']],
+   [[37.8300,-119.4470,'Tenaya Lake'],[37.8730,-119.3590,'Tuolumne Meadows']]]},
+ sea:{coord:[47.6062,-122.3321]},
+ yel:{coord:[44.4605,-110.8281]},
+ abq:{coord:[35.0844,-106.6504]},
+ nyc:{coord:[40.7128,-74.0060]},
+ chi:{coord:[41.8781,-87.6298]}
 };
 const OVERVIEW={
  doc:DOC('1JohIUWkRZvSyUDrOADmRUB3gCOTcWKf4FTluVoqDUs0'),
@@ -274,8 +287,10 @@ const PACK={id:'pack',emoji:'🧳',name:'通用打包',checklist:[
 const ST={ok:['p-ok','✅'],plan:['p-plan','📅'],idea:['p-idea','💡']};
 const $=s=>document.querySelector(s);
 const view=$('#view'), bar=$('#bar'), barsub=$('#barsub');
+const WXCACHE={};
 function daysTo(s){const t=new Date();t.setHours(0,0,0,0);const d=new Date(s+'T00:00:00');return Math.round((d-t)/864e5);}
 function cdText(n){return n>1?['还有',n+' 天']:n===1?['明天出发','✦']:n===0?['今天出发','✦']:['已结束',''];}
+function cdLong(n){return n>1?('还有 '+n+' 天'):n===1?'明天出发':n===0?'今天出发':'已结束';}
 let CHK={};try{CHK=JSON.parse(localStorage.getItem('trip_checks')||'{}')}catch(e){}
 function saveChk(){try{localStorage.setItem('trip_checks',JSON.stringify(CHK))}catch(e){}}
 function prog(t){if(!t.checklist)return null;const done=t.checklist.filter(c=>CHK[t.id+'::'+c[0]]).length;return{done,total:t.checklist.length};}
@@ -284,6 +299,7 @@ function gi(s){const i=s.indexOf('：');return i>0?('<b>'+esc(s.slice(0,i+1))+'<
 function chkHTML(o){return o.checklist.map(c=>{const on=CHK[o.id+'::'+c[0]];return `<div class="chk ${on?'on':''}" data-k="${o.id}::${c[0]}"><div class="box">${on?'✓':''}</div><div class="ctx">${esc(c[1])}${c[2]?`<small>${esc(c[2])}</small>`:''}</div></div>`;}).join('');}
 function bindChk(re){view.querySelectorAll('.chk').forEach(el=>el.onclick=()=>{CHK[el.dataset.k]=!CHK[el.dataset.k];saveChk();re();});}
 function bindGo(){view.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>{const g=el.dataset.go;if(g==='__docs__')window.open(FOLDER,'_blank');else location.hash=g;});}
+function WMO(c){const m={0:['☀️','晴'],1:['🌤️','晴间多云'],2:['⛅','多云'],3:['☁️','阴'],45:['🌫️','雾'],48:['🌫️','雾凇'],51:['🌦️','小毛雨'],53:['🌦️','毛毛雨'],55:['🌦️','浓毛雨'],56:['🌧️','冻毛雨'],57:['🌧️','冻毛雨'],61:['🌧️','小雨'],63:['🌧️','中雨'],65:['🌧️','大雨'],66:['🌧️','冻雨'],67:['🌧️','冻雨'],71:['🌨️','小雪'],73:['🌨️','中雪'],75:['🌨️','大雪'],77:['🌨️','米雪'],80:['🌦️','阵雨'],81:['🌦️','阵雨'],82:['🌧️','强阵雨'],85:['🌨️','阵雪'],86:['🌨️','强阵雪'],95:['⛈️','雷雨'],96:['⛈️','雷雨冰雹'],99:['⛈️','强雷雨']};return m[c]||['🌡️','—'];}
 
 function renderHome(){
   setTabs('#/');bar.querySelector('h1').textContent='我们的旅行';showBack(false);
@@ -297,7 +313,7 @@ function renderHome(){
   h+=`<div class="hero" data-go="#/t/${next.id}"><div class="glow"></div>
     <div class="lab">下一程</div><div class="nm">${next.emoji} ${next.name} ${next.en}</div>
     <div class="big">${a}${bb&&bb!=='✦'?'<small>'+bb+'</small>':''}</div>
-    <div class="meta">${fmt(next.start)} · ${next.days} 天 · ${esc(next.transport)}</div>
+    <div class="meta">${fmt(next.start)} · ${next.days} 天 · ${esc(next.transport)}<span id="herowx"></span></div>
     <span class="go">查看行程 →</span></div>`;
   h+=`<div class="tiles">
     <div class="tile" data-go="#/overview"><div class="ic2">🗺️</div><div class="tl">排期 & 季节</div><div class="ts">为什么这么排</div></div>
@@ -316,7 +332,7 @@ function renderHome(){
   h+='<div class="sec">出行前必看</div><div class="gcard">'+GUIDE.quick.map(q=>`<div class="gli">${gi(q)}</div>`).join('')+'</div>';
   h+=`<div class="docbtn" data-go="#/guide">🧭 打开通用攻略（机票/酒店/租车/年票/打包/避坑）</div>`;
   h+='<div class="foot">数据来自你的旅行工作区 · 想加或改内容告诉我即可</div></div>';
-  view.innerHTML=h;bindGo();
+  view.innerHTML=h;bindGo();heroWeather(next);
 }
 function renderTrip(id){
   const t=TRIPS.find(x=>x.id===id);if(!t)return renderHome();
@@ -325,13 +341,15 @@ function renderTrip(id){
   h+=`<div style="font-size:30px">${t.emoji}</div><div class="dtitle">${t.name} <span style="font-size:15px;color:var(--muted);font-weight:600">${t.en}</span></div>
     <span class="pill ${st[0]}">${st[1]} ${esc(t.statusText)}</span>`;
   h+='<div class="chips">'+(t.chips||[['📅',fmt(t.start)],['🧭',t.days+' 天'],['🚗',t.transport]]).map(c=>`<span class="chip">${c[0]} <b>${esc(c[1])}</b></span>`).join('')+'</div>';
-  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 打开完整保姆级攻略（Google 文档）</a>`;
-  h+=`<a class="docbtn" href="${gcal(t)}" target="_blank" rel="noopener" style="background:transparent;border:1px solid var(--line);color:var(--ink)">📅 加入日历（到点提醒）</a></div>`;
-  if(t.weather)h+=`<div class="block"><div class="note">🌦️ ${esc(t.weather)}</div></div>`;
-  if(GEO[t.id])h+='<div class="block"><h3>🌡️ 实时天气</h3><div class="card" id="wx" style="padding:12px 15px;font-size:13.5px;color:var(--muted)">加载中…</div></div>';
+  h+=`<div class="cd"><span class="cdn">⏳ ${cdLong(daysTo(t.start))}</span><a class="icsbtn" id="icsbtn">📅 加到日历提醒</a></div>`;
+  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 打开完整保姆级攻略（Google 文档）</a></div>`;
+  h+=`<div class="block" id="wxmount"><div class="wx" id="wxlive"><span class="now">🌡️</span><div style="flex:1"><div class="tnow" style="font-size:15px">实时天气加载中…</div><div class="wmeta">${esc(t.name)} ${esc(t.en)}</div></div></div>${t.weather?`<div class="note" style="margin-top:10px">🌦️ 季节预期：${esc(t.weather)}</div>`:''}</div>`;
   if(t.itinerary){h+='<div class="block"><h3>🗺️ 逐日安排</h3>';
-    t.itinerary.forEach(d=>{h+=`<div class="day"><div class="dh"><span class="dn">${d.n}</span><span class="dd">· ${esc(d.d)}</span></div>`;
-      if(d.route){const em=embedFromRoute(d.route);if(em)h+=`<iframe class="map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${em}"></iframe>`;h+=`<a class="route" href="${d.route}" target="_blank" rel="noopener">📍 ${em?'放大 / 导航':'在 Google 地图打开当天路线'} →</a>`;}
+    const geo=GEO[t.id];
+    t.itinerary.forEach((d,di)=>{h+=`<div class="day"><div class="dh"><span class="dn">${d.n}</span><span class="dd">· ${esc(d.d)}</span></div>`;
+      const pts=geo&&geo.days&&geo.days[di];
+      if(pts)h+=`<div class="lmap" id="map_${t.id}_${di}"></div>`;
+      if(d.route)h+=`<a class="navlink" href="${d.route}" target="_blank" rel="noopener">📍 在 Google 地图导航 ↗</a>`;
       h+='<div class="tl">'+d.items.map(it=>`<div class="it"><div class="tm">${esc(it[0])}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct"><div class="h">${esc(it[1])}</div>${it[2]?`<div class="n">${esc(it[2])}</div>`:''}</div></div>`).join('')+'</div></div>';});
     h+='</div>';}
   if(t.highlights){h+='<div class="block"><h3>✨ 亮点抢先看</h3><div class="card" style="padding:6px 15px">'+
@@ -341,7 +359,44 @@ function renderTrip(id){
   if(t.food){h+='<div class="block"><h3>🍽️ 吃什么</h3><div class="card" style="padding:4px 15px">'+
     t.food.map(f=>`<div class="food"><span class="fn">${esc(f[0])}</span><span class="fd">${esc(f[1])}</span></div>`).join('')+'</div></div>';}
   if(t.tips){h+='<div class="block"><h3>💡 避坑提示</h3><ul class="tips">'+t.tips.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul></div>';}
-  h+='</div>';view.innerHTML=h;bindChk(()=>renderTrip(id));const wx=view.querySelector('#wx');if(wx)loadWeather(t.id,t.start,wx);
+  h+='</div>';view.innerHTML=h;bindChk(()=>renderTrip(id));initTripExtras(t);
+}
+function initTripExtras(t){
+  const geo=GEO[t.id];
+  if(geo&&geo.days&&window.L){t.itinerary.forEach((d,di)=>{const pts=geo.days[di];const el=document.getElementById('map_'+t.id+'_'+di);if(!pts||!el)return;
+    try{const m=L.map(el,{scrollWheelZoom:false});
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(m);
+      const ll=pts.map(p=>[p[0],p[1]]);
+      pts.forEach((p,k)=>L.marker([p[0],p[1]],{icon:L.divIcon({className:'',html:'<div class="lnum">'+(k+1)+'</div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(m).bindPopup((k+1)+'. '+p[2]));
+      if(ll.length>1){L.polyline(ll,{color:'#0e7490',weight:3,opacity:.85}).addTo(m);m.fitBounds(ll,{padding:[30,30]});}else{m.setView(ll[0],14);}
+      setTimeout(()=>m.invalidateSize(),80);
+    }catch(e){}});}
+  loadWeather(t);
+  const ib=document.getElementById('icsbtn');if(ib)ib.onclick=()=>downloadICS(t);
+}
+function loadWeather(t){
+  const g=GEO[t.id],live=document.getElementById('wxlive');if(!g||!live)return;
+  const [la,lo]=g.coord;
+  const url='https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=auto&forecast_days=7';
+  const fill=d=>{try{
+    const c=d.current,[ce,ct]=WMO(c.weather_code),f=Math.round(c.temperature_2m),cc=Math.round((f-32)/1.8);
+    live.innerHTML='<span class="now">'+ce+'</span><div style="flex:1"><div class="tnow">'+f+'°F <small style="font-size:12px;color:var(--muted);font-weight:600">/ '+cc+'°C</small></div><div class="wmeta">'+ct+' · '+esc(t.name)+' 实时</div></div>';
+    const dy=d.daily;if(dy&&dy.time){let fr='<div class="wxf">';for(let i=0;i<dy.time.length;i++){const de=WMO(dy.weather_code[i])[0],hi=Math.round(dy.temperature_2m_max[i]),lo2=Math.round(dy.temperature_2m_min[i]),wd=['周日','周一','周二','周三','周四','周五','周六'][new Date(dy.time[i]+'T00:00:00').getDay()];fr+='<div class="d"><div class="wd">'+(i===0?'今天':wd)+'</div><div class="we">'+de+'</div><div class="wt">'+hi+'°<small>/'+lo2+'°</small></div></div>';}fr+='</div>';live.insertAdjacentHTML('afterend',fr);}
+  }catch(e){}};
+  if(WXCACHE[t.id]&&WXCACHE[t.id].daily){fill(WXCACHE[t.id]);return;}
+  fetch(url).then(r=>r.json()).then(d=>{WXCACHE[t.id]=d;fill(d);}).catch(()=>{live.innerHTML='<span class="now">🌦️</span><div><div class="tnow" style="font-size:14px">实时天气暂时加载不出</div><div class="wmeta">看下方季节预期</div></div>';});
+}
+function heroWeather(t){
+  const g=GEO[t.id],el=document.getElementById('herowx');if(!g||!el)return;
+  const put=d=>{try{const c=d.current,[e]=WMO(c.weather_code),f=Math.round(c.temperature_2m);el.textContent=' · '+e+' '+f+'°F';}catch(_){}};
+  if(WXCACHE[t.id]){put(WXCACHE[t.id]);return;}
+  const [la,lo]=g.coord;
+  fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=auto').then(r=>r.json()).then(put).catch(()=>{});
+}
+function downloadICS(t){
+  const d=t.start.replace(/-/g,'');const end=new Date(new Date(t.start+'T00:00:00').getTime()+t.days*864e5);const ed=end.getFullYear()+String(end.getMonth()+1).padStart(2,'0')+String(end.getDate()).padStart(2,'0');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ourtrip//cn','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+t.id+'@ourtrip','DTSTAMP:'+d+'T000000Z','DTSTART;VALUE=DATE:'+d,'DTEND;VALUE=DATE:'+ed,'SUMMARY:'+t.emoji+' '+t.name+' 出发','DESCRIPTION:行程 '+SITE+'#/t/'+t.id,'BEGIN:VALARM','TRIGGER:-P7D','ACTION:DISPLAY','DESCRIPTION:一周后出发 '+t.name,'END:VALARM','BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:明天出发 '+t.name,'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download=t.id+'-'+t.name+'.ics';document.body.appendChild(a);a.click();a.remove();
 }
 function renderOverview(){
   setTabs('#/');bar.querySelector('h1').textContent='排期 & 季节';barsub.textContent='';showBack(true);
@@ -364,33 +419,6 @@ function renderGuide(){
   h+='<div class="foot">勾选会记住（存在这台设备上）· 更细节看完整文档</div></div>';
   view.innerHTML=h;bindChk(renderGuide);
 }
-function fmtMoney(n){return '$'+Math.round(n).toLocaleString('en-US');}
-function renderBudget(){
-  setTabs('#/budget');bar.querySelector('h1').textContent='预算估算';barsub.textContent='';showBack(false);
-  const order=[...TRIPS].sort((a,b)=>a.start.localeCompare(b.start));
-  let lo=0,hi=0;order.forEach(t=>{const b=BUDGET[t.id];if(b)b.items.forEach(i=>{lo+=i[1];hi+=i[2];});});
-  let h='<div class="wrap fade">';
-  h+=`<div class="metric"><div class="ml">七趟合计 · 两人粗估（含税前）</div><div class="mv">${fmtMoney(lo)} – ${fmtMoney(hi)}</div></div>`;
-  order.forEach(t=>{const b=BUDGET[t.id];if(!b)return;let tl=0,th=0;b.items.forEach(i=>{tl+=i[1];th+=i[2];});
-    h+=`<div class="block" style="margin:14px 0"><h3>${t.emoji} ${esc(t.name)} <span style="color:var(--muted);font-weight:600;font-size:13px">${fmt(t.start)} · ${t.days}天</span></h3><div class="card" style="padding:6px 15px">`+
-    b.items.map(i=>`<div class="brow"><span>${esc(i[0])}</span><span class="bv">${fmtMoney(i[1])}–${fmtMoney(i[2])}</span></div>`).join('')+
-    `<div class="bsub"><span>小计</span><span>${fmtMoney(tl)} – ${fmtMoney(th)}</span></div></div>`+
-    (b.note?`<div style="font-size:11.5px;color:var(--muted);margin:5px 4px 0">${esc(b.note)}</div>`:'')+'</div>';});
-  h+='<div class="foot">仅为参考粗估（两人 · 含税前）；机票/油费随时段浮动，实际以预订为准。</div></div>';
-  view.innerHTML=h;
-}
-function wcode(c){const m={0:['☀️','晴'],1:['🌤️','大致晴'],2:['⛅','多云'],3:['☁️','阴'],45:['🌫️','雾'],48:['🌫️','雾凇'],51:['🌦️','小毛雨'],53:['🌦️','毛毛雨'],55:['🌧️','密毛雨'],61:['🌧️','小雨'],63:['🌧️','中雨'],65:['🌧️','大雨'],71:['🌨️','小雪'],73:['🌨️','中雪'],75:['❄️','大雪'],80:['🌦️','阵雨'],81:['🌦️','阵雨'],82:['⛈️','强阵雨'],95:['⛈️','雷暴'],96:['⛈️','雷暴'],99:['⛈️','强雷暴']};return m[c]||['🌡️',''];}
-function loadWeather(id,start,el){const g=GEO[id];if(!g){el.textContent='—';return;}
-  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${g[0]}&longitude=${g[1]}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto&forecast_days=16`)
-   .then(r=>r.json()).then(d=>{const cw=d.current,wc=wcode(cw.weather_code);
-     let s=`<b>现在</b> ${Math.round(cw.temperature_2m)}°F ${wc[0]} ${wc[1]}`;
-     const idx=d.daily&&d.daily.time?d.daily.time.indexOf(start):-1;
-     if(idx>=0){const td=wcode(d.daily.weather_code[idx]);s+=`<br><b>出发日 ${(+start.slice(5,7))}/${(+start.slice(8,10))}</b> ${Math.round(d.daily.temperature_2m_min[idx])}–${Math.round(d.daily.temperature_2m_max[idx])}°F ${td[0]} ${td[1]}`;}
-     else{s+='<br><span style="color:var(--muted)">出发还早，临近会显示当日预报；先看上面的季节提示。</span>';}
-     el.innerHTML=s;el.style.color='var(--ink)';
-   }).catch(()=>{el.textContent='实时天气暂不可用（可能离线）。';});}
-function gcal(t){const s=t.start.replace(/-/g,'');const e=new Date(t.start+'T00:00:00');e.setDate(e.getDate()+(t.days||1));const ee=`${e.getFullYear()}${String(e.getMonth()+1).padStart(2,'0')}${String(e.getDate()).padStart(2,'0')}`;return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('🧳 '+t.name+' '+t.en)}&dates=${s}/${ee}&details=${encodeURIComponent('行程 App: https://nonnoob.github.io/trip/#/t/'+t.id)}`;}
-function embedFromRoute(u){try{const q=new URL(u).searchParams;const center=q.get('origin')||q.get('destination');return 'https://maps.google.com/maps?q='+encodeURIComponent(center)+'&z=13&output=embed';}catch(e){return null;}}
 function renderLists(){
   setTabs('#/lists');bar.querySelector('h1').textContent='出发前清单';barsub.textContent='';showBack(false);
   let h='<div class="wrap fade">';
@@ -403,7 +431,7 @@ function fmt(s){const[y,m,d]=s.split('-');const w=['周日','周一','周二','�
 function showBack(on){const ex=bar.querySelector('.back');if(on&&!ex){const b=document.createElement('button');b.className='back';b.innerHTML='‹ 返回';b.onclick=()=>history.length>1?history.back():location.hash='#/';bar.insertBefore(b,bar.firstChild);}if(!on&&ex)ex.remove();}
 function setTabs(hash){document.querySelectorAll('.tabbar a').forEach(a=>a.classList.toggle('on',a.dataset.go===hash));}
 document.querySelectorAll('.tabbar a').forEach(a=>a.onclick=()=>{const g=a.dataset.go;if(g==='__docs__')window.open(FOLDER,'_blank');else location.hash=g;});
-function route(){const h=location.hash||'#/';if(h.startsWith('#/t/'))renderTrip(h.slice(4));else if(h==='#/guide')renderGuide();else if(h==='#/overview')renderOverview();else if(h==='#/budget')renderBudget();else if(h==='#/lists')renderLists();else renderHome();window.scrollTo(0,0);}
+function route(){const h=location.hash||'#/';if(h.startsWith('#/t/'))renderTrip(h.slice(4));else if(h==='#/guide')renderGuide();else if(h==='#/overview')renderOverview();else if(h==='#/lists')renderLists();else renderHome();window.scrollTo(0,0);}
 window.addEventListener('hashchange',route);route();
 try{const mf={name:'我们的旅行',short_name:'我们的旅行',start_url:'.',display:'standalone',background_color:'#f4f5f3',theme_color:'#0e7490',icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" rx="96" fill="#0e7490"/><text x="50%" y="54%" font-size="300" text-anchor="middle" dominant-baseline="middle">🧳</text></svg>'),sizes:'512x512',type:'image/svg+xml'}]};const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));document.head.appendChild(l);}catch(e){}
 </script>
