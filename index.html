@@ -134,7 +134,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .etabtn{width:100%;margin:2px 0 12px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:11px;padding:11px;font-size:13px;font-weight:700;cursor:pointer}
 .etabtn:disabled{opacity:.7}
 .navrow{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:8px}
-.navm{font-size:11.5px;font-weight:700;color:#fff;background:var(--accent);border-radius:8px;padding:4px 10px;text-decoration:none}
+.navm{font-size:12px;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:8px;padding:3px 11px;text-decoration:none}
 .eta{font-size:11.5px;color:var(--accent-ink);font-weight:600}
 .fcard .fh{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .fcard .fn2{font-size:15px;font-weight:700}
@@ -469,7 +469,7 @@ function renderDay(tid,di){
   h+=`<button class="etabtn" id="etabtn">📍 用当前位置算各段实时耗时</button>`;
   let tl='<div class="tl">';
   d.items.forEach((it,ii)=>{const hd=DETAIL[t.id]&&DETAIL[t.id][it[1]];const leg=legs&&legs[ii];const c=co[it[1]];
-    tl+=`<div class="it"><div class="tm">${esc(it[0])}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct">${leg?`<div class="legtag">${esc(leg)}</div>`:''}<div class="h">${hd?`<a data-go="#/s/${t.id}/${di}/${ii}">${esc(it[1])} <span class="more">详情 ›</span></a>`:esc(it[1])}</div>${it[2]?`<div class="n">${esc(it[2])}</div>`:''}${c?`<div class="navrow"><a class="navm" href="https://www.google.com/maps/dir/?api=1&destination=${c[0]},${c[1]}" target="_blank" rel="noopener">🧭 导航到这里</a><span class="eta" id="eta_${di}_${ii}"></span></div>`:''}</div></div>`;
+    tl+=`<div class="it"><div class="tm">${esc(it[0])}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct">${leg?`<div class="legtag">${esc(leg)}</div>`:''}<div class="h">${hd?`<a data-go="#/s/${t.id}/${di}/${ii}">${esc(it[1])} <span class="more">详情 ›</span></a>`:esc(it[1])}</div>${it[2]?`<div class="n">${esc(it[2])}</div>`:''}${c?`<div class="navrow"><a class="navm" href="https://www.google.com/maps/dir/?api=1&destination=${c[0]},${c[1]}" target="_blank" rel="noopener">🧭 导航</a><span class="eta" id="eta_${di}_${ii}"></span></div>`:''}</div></div>`;
     dmeals.filter(m=>m.after===ii).forEach(m=>{const fl=(FX[t.id]&&FX[t.id].food)||[];const pl=(m.picks||[]).map(p=>{const fi=fl.findIndex(x=>x.n===p);return fi>=0?`<a class="pick" data-go="#/r/${t.id}/${fi}">${esc(p)} ›</a>`:esc(p);}).join('、');tl+=`<div class="it meal"><div class="tm">${esc(m.t||'')}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct"><div class="h">🍴 ${esc(m.k||'用餐')}<span class="opt">可选</span></div><div class="n">${esc(m.near||'')}${m.picks&&m.picks.length?'　附近：'+pl:''}</div></div></div>`;});
   });
   tl+='</div>';h+=tl;
@@ -492,8 +492,8 @@ function computeETAs(t,di,btn){
     const coords=[lo+','+la].concat(list.map(x=>x.c[1]+','+x.c[0])).join(';');
     fetch('https://router.project-osrm.org/table/v1/driving/'+coords+'?sources=0&annotations=duration,distance').then(r=>r.json()).then(function(dat){
       const dur=dat.durations&&dat.durations[0],dis=dat.distances&&dat.distances[0];
-      list.forEach(function(x,k){const el=document.getElementById('eta_'+di+'_'+x.ii);if(!el)return;const sec=dur&&dur[k+1],met=dis&&dis[k+1];if(sec==null){el.textContent='';return;}const drive=Math.round(sec/60),walk=met!=null?Math.round(met/80):null;el.innerHTML='　🚗 约 '+drive+' 分钟'+(walk!=null&&walk<=90?' · 🚶 约 '+walk+' 分钟':'');});
-      btn.textContent='✅ 已按当前位置估算（驾车路网实时 · 步行为估算）';btn.disabled=false;
+      list.forEach(function(x,k){const el=document.getElementById('eta_'+di+'_'+x.ii);if(!el)return;const sec=dur&&dur[k+1],met=dis&&dis[k+1];if(sec==null){el.textContent='';return;}const drive=Math.round(sec/60);let line='🚗 '+drive+'分';if(met!=null&&drive<=40){const walk=Math.round(met/80),tran=Math.round(drive*1.5)+6;line='🚶 '+walk+'分 · '+line+' · 🚌 '+tran+'分';}el.innerHTML='　'+line;});
+      btn.textContent='✅ 已按当前位置估算（驾车实时路网 · 步行/公交为估算，准确以导航为准）';btn.disabled=false;
     }).catch(function(){btn.textContent='⚠️ 算不出来，点上面的导航按钮看实时';btn.disabled=false;});
   },function(){btn.textContent='⚠️ 未取得定位，点导航按钮也能从当前位置出发';btn.disabled=false;},{enableHighAccuracy:false,timeout:8000,maximumAge:60000});
 }
