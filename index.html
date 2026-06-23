@@ -252,6 +252,17 @@ const COORD={
  sf:{'联合广场 Union Square':[37.7880,-122.4074],'SFMOMA 现代艺术馆':[37.7857,-122.4011],'唐人街龙门 Dragon Gate':[37.7908,-122.4056],'Powell 缆车总站':[37.7849,-122.4080],'九曲花街 Lombard St':[37.8021,-122.4187],'The Buena Vista':[37.8058,-122.4216],'机械博物馆':[37.8100,-122.4161],'渔人码头 · Pier 39':[37.8087,-122.4098],'Crab House 晚餐':[37.8087,-122.4098],'金门大桥':[37.8078,-122.4750],'Warming Hut':[37.8312,-122.4795],'加州科学馆':[37.7699,-122.4661],'Amoeba Music':[37.7692,-122.4481],'彩绘女士 Painted Ladies':[37.7763,-122.4324],'多洛雷斯公园':[37.7596,-122.4269],'Mission 晚餐':[37.7510,-122.4181],'Emeryville/Oakland 上车':[37.8407,-122.2914],'洛杉矶换乘':[34.0561,-118.2365]},
  yos:{'General Sherman 谢尔曼将军树':[36.5816,-118.7514],'Congress Trail 国会步道':[36.5810,-118.7505],'Big Trees Trail 大树环道':[36.5651,-118.7740],'Giant Forest Museum 巨树博物馆':[36.5650,-118.7727],'Moro Rock 莫罗岩':[36.5470,-118.7656],'Tunnel Log + Crescent Meadow':[36.5520,-118.7556],'Tokopah Falls 托卡帕瀑布':[36.6035,-118.7237],'Crystal Cave 水晶洞':[36.5896,-118.8226],'General Grant 格兰特将军树':[36.7479,-118.9707],'Hume Lake 休姆湖':[36.7889,-118.9100],'Panoramic Point 全景点':[36.7367,-118.9637],'Crescent Meadow 晨间漫步':[36.5547,-118.7480],'Hospital Rock 医院岩岩画':[36.5060,-118.8030]}
 };
+const PREP={
+ yos:{
+  pack:['防滑徒步鞋（Moro Rock 石阶、Tokopah 河边湿滑）','泳衣 + 水鞋 + 速干毛巾（Hume 湖戏水）','Crystal Cave：长袖外套（洞内约 9°C）','每人 2L+ 水 + 零食/野餐','离线地图（园内无信号）+ 纸质园区图','防晒 SPF50 / 宽檐帽 / 墨镜','晕车药（盘山发夹弯多）'],
+  budget:[['🏨 住宿','$300–700','门户镇 2 晚 $150–250/晚；园内 Wuksachi $300–350/晚'],['🍽️ 吃','$200–400','约 $40–80/人/天，自带野餐更省'],['🚗 交通','约 $130–160','油约 $90–110 往返 + 门票 $35/车（或 $80 年票）'],['🎟️ 门票/活动','$0–44','Crystal Cave 可选 $22/人'],['💰 合计(两人)','约 $650–1,300','住门户镇偏低、园内偏高']],
+  booking:[
+   {t:'🏨 订酒店',steps:['定方案：求一早进山省心→门户镇 Three Rivers（$150–250/晚）；想省每天上下山 1h→园内 Wuksachi（$300–350/晚）。','Three Rivers：Booking/Hotels/Tripadvisor 搜 “Three Rivers, CA”，筛免费取消、按评分排；推荐 The Gateway Lodge、The Sequoia Motel、Sequoia Riverfront Cabins。订 7/3、7/4 两晚。','Wuksachi：官网 visitsequoia.com → Stay → Wuksachi Lodge 选日期下单，或电话 (866) 807-3598；报 AAA/MILITARY/SENIOR 折扣；满了每 1–2 天刷候补。','都选“免费取消”先锁价；看总价含税。']},
+   {t:'🚗 自驾（本趟不坐飞机/火车）',steps:['路线：尔湾 → I-5 N → CA-99 N（经 Visalia）→ CA-198 E → Three Rivers → Ash Mountain 入口 → Generals Highway 上山，约 262mi/5.5h。','门票：提前在 recreation.gov 网购 $35/车（或 $80 年票）并截图，过门口更快。','出发前在 Visalia/Three Rivers 加满油、下载离线地图、查 nps.gov/seki 路况。','下山用低挡控速；7/4 周末 9 点前进园、停博物馆坐免费接驳车。']},
+   {t:'🎟️ 订 Crystal Cave + 餐厅',steps:['Crystal Cave：只在 sequoiaparksconservancy.org/crystal-cave 买（成人 $22/儿童 $11），至少提前 36 小时、最好 1–2 个月，选上午场。','园内 Wuksachi The Peaks 正餐：旺季官网/电话订位。','门户镇 The Gateway 河景餐厅：傍晚旺季提前订位（OpenTable 或电话）。','野餐：进园前 Visalia/Three Rivers 超市采买。']}
+  ]
+ }
+};
 const OVERVIEW={
  doc:DOC('1JohIUWkRZvSyUDrOADmRUB3gCOTcWKf4FTluVoqDUs0'),
  principle:'尔湾出发 · 轻松慢节奏。已定的按真实日期排，其余按各地最佳季节给建议、可自由调整。',
@@ -390,6 +401,7 @@ function renderTrip(id){
   h+=`<div class="cd"><span class="cdn">⏳ ${cdLong(daysTo(t.start))}</span><a class="icsbtn" id="icsbtn">📅 加到日历提醒</a></div>`;
   h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 打开完整保姆级攻略（Google 文档）</a>`;
   h+=`<div class="note" style="margin-top:8px;font-size:12.5px">🔒 机票 / 酒店 / 票务确认号等私密信息放在 Google 文档里（点上方按钮查看），不显示在网页上。</div></div>`;
+  h+=`<div class="docbtn" data-go="#/p/${t.id}" style="margin-top:6px">🧳 出发前准备 · 打包 / 预算 / 订票攻略 ›</div>`;
   h+=`<div class="block" id="wxmount"><div class="wx" id="wxlive"><span class="now">🌡️</span><div style="flex:1"><div class="tnow" style="font-size:15px">实时天气加载中…</div><div class="wmeta">${esc(t.name)} ${esc(t.en)}</div></div></div>${t.weather?`<div class="note" style="margin-top:10px">🌦️ 季节预期：${esc(t.weather)}</div>`:''}</div>`;
   if(t.itinerary){h+='<div class="block"><h3>🗺️ 逐日安排（点开看当天）</h3><div class="card">';
     t.itinerary.forEach((d,di)=>{h+=`<div class="trip" data-go="#/d/${t.id}/${di}"><div class="ic">${di+1}</div><div class="tx"><div class="t1">${esc(d.n)}</div><div class="t2">${esc(d.d)} · ${d.items.length} 个停靠点</div></div><div class="ch">›</div></div>`;});
@@ -502,6 +514,26 @@ function computeETAs(t,di,btn){
     }).catch(function(){btn.textContent='⚠️ 算不出来，点上面的导航按钮看实时';btn.disabled=false;});
   },function(){btn.textContent='⚠️ 未取得定位，点导航按钮也能从当前位置出发';btn.disabled=false;},{enableHighAccuracy:false,timeout:8000,maximumAge:60000});
 }
+function renderPrep(tid){
+  const t=TRIPS.find(x=>x.id===tid);if(!t)return renderHome();
+  const p=PREP[tid];
+  setTabs('');bar.querySelector('h1').textContent=t.name;barsub.textContent='';showBack(true);
+  let h=`<div class="wrap fade"><div class="dhero"><div style="font-size:12px;color:var(--muted);font-weight:700">${t.emoji} ${esc(t.name)}</div><div class="dtitle" style="font-size:22px">🧳 出发前准备</div></div>`;
+  h+='<div class="block"><h3>🎒 要带什么</h3><div class="gcard">'+PACK.checklist.map(c=>`<div class="gli">• ${esc(c[1])}</div>`).join('')+'</div>';
+  if(p&&p.pack&&p.pack.length)h+='<div class="gcard" style="margin-top:8px"><div class="gli" style="color:var(--muted);font-size:12px">本趟额外：</div>'+p.pack.map(x=>`<div class="gli">• ${esc(x)}</div>`).join('')+'</div>';
+  h+='</div>';
+  h+='<div class="block"><h3>💰 旅游预算（两人估算）</h3><div class="gcard">';
+  if(p&&p.budget)h+=p.budget.map(b=>`<div class="mini"><span class="k">${esc(b[0])}</span><span class="v"><b style="color:var(--accent-ink)">${esc(b[1])}</b>${b[2]?'　'+esc(b[2]):''}</span></div>`).join('');
+  else h+='<div class="gli">通用预算与省钱技巧见底部「🧭 攻略」页；本趟具体我可按你定的方案补上。</div>';
+  h+='</div></div>';
+  h+='<div class="block"><h3>📝 订票攻略（详细步骤）</h3>';
+  if(p&&p.booking)h+=p.booking.map(b=>`<div class="gcard" style="margin-bottom:10px"><div style="font-weight:700;font-size:14px;padding:8px 1px 5px">${esc(b.t)}</div>`+b.steps.map((s,i)=>`<div class="gli">${i+1}. ${gi(s)}</div>`).join('')+'</div>').join('');
+  else h+='<div class="gcard"><div class="gli">机票/酒店/租车的通用分步见「🧭 攻略」页；本趟具体（在哪订、怎么订）我可按你的选择补成分步教程。</div></div>';
+  h+='</div>';
+  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 打开完整保姆级攻略（订票/自驾详版）</a>`;
+  h+=`<div class="docbtn" data-go="#/t/${t.id}">← 返回 ${esc(t.name)} 行程</div>`;
+  h+='</div>';view.innerHTML=h;bindGo();
+}
 function renderResto(tid,idx){
   const t=TRIPS.find(x=>x.id===tid),f=FX[tid]&&FX[tid].food&&FX[tid].food[idx];
   if(!t||!f)return renderHome();
@@ -557,7 +589,7 @@ function route(){const h=location.hash||'#/';
   if(h.startsWith('#/s/')){const p=h.slice(4).split('/');renderStop(p[0],+p[1],+p[2]);}
   else if(h.startsWith('#/r/')){const p=h.slice(4).split('/');renderResto(p[0],+p[1]);}
   else if(h.startsWith('#/d/')){const p=h.slice(4).split('/');renderDay(p[0],+p[1]);}
-  else if(h.startsWith('#/t/'))renderTrip(h.slice(4));
+  else if(h.startsWith('#/p/'))renderPrep(h.slice(4));else if(h.startsWith('#/t/'))renderTrip(h.slice(4));
   else if(h==='#/guide')renderGuide();else if(h==='#/overview')renderOverview();else if(h==='#/lists')renderLists();else renderHome();
   const isDetail=h.startsWith('#/s/')||h.startsWith('#/r/');const y=isDetail?0:(SCROLL[h]||0);curHash=h;requestAnimationFrame(function(){requestAnimationFrame(function(){window.scrollTo(0,y);});});}
 window.addEventListener('hashchange',route);route();
