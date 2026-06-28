@@ -36,13 +36,33 @@ const visitedCount=()=>PARKS.reduce((n,p)=>n+(isVisited(p.id)?1:0),0);
 
 /* ---------- park <-> state ---------- */
 const ABBR2NAME={},NAME2STATE={};STATES.forEach(s=>{ABBR2NAME[s.ab]=s.name;NAME2STATE[s.name]=s;});
-PARKS.forEach(p=>{p._terr=(p.id==='virginislands'||p.id==='samoa');let ab=PSF[p.id];if(!ab){const m=p.st.match(/([A-Z]{2})\s*$/);ab=m?m[1]:null;}p._ab=ab;p._state=ab?ABBR2NAME[ab]:null;});
+const USGS_OVR={hawaii:'Volcanoes National Park',haleakala:'Haleakala National Park',wrangell:'Wrangell',samoa:'American Samoa',virginislands:'Virgin Islands National Park'};
+PARKS.forEach(p=>{p._terr=(p.id==='virginislands'||p.id==='samoa');let ab=PSF[p.id];if(!ab){const m=p.st.match(/([A-Z]{2})\s*$/);ab=m?m[1]:null;}p._ab=ab;p._state=ab?ABBR2NAME[ab]:null;p._usgs=USGS_OVR[p.id]||(p.en+' National Park');});
 const parksInState=name=>PARKS.filter(p=>p._state===name);
 
 /* ---------- progress / tiers / regions ---------- */
 function tierOf(n){for(const[t,name]of TIERS)if(n>=t)return name;return '未启程';}
 function renderProgress(){const n=visitedCount();$('#cnt').textContent=n;$('#tier').textContent=tierOf(n);$('#fill').style.width=Math.round(n/PARKS.length*100)+'%';$('#pct').textContent=Math.round(n/PARKS.length*100)+'%';const states=new Set();PARKS.forEach(p=>{if(isVisited(p.id)&&p._state)states.add(p._state);});$('#states').textContent=states.size;let latest='';PARKS.forEach(p=>{if(isVisited(p.id)){const d=S.recs[p.id].d;if(d>latest)latest=d;}});$('#latest').textContent=latest?('最近 '+latest):'';}
 function renderRegions(){const host=$('#regions');host.innerHTML='';REGIONS.forEach(rg=>{const tot=PARKS.filter(p=>p.rg===rg).length;const got=PARKS.filter(p=>p.rg===rg&&isVisited(p.id)).length;const c=el('div','chip'+(curRegion===rg?' on':''));c.innerHTML=rg+' <b>'+got+'</b>/'+tot;c.onclick=()=>{curRegion=curRegion===rg?null:rg;renderRegions();paintNational();};host.appendChild(c);});}
+
+/* ---------- sound + haptics ---------- */
+let AC=null, SOUND=localStorage.getItem('np_sound')!=='0';
+function ensureAudio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();}
+function sfxScratch(){if(!SOUND||!AC)return;const t=AC.currentTime,len=Math.floor(AC.sampleRate*0.05);const b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*0.5;const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=2600;const g=AC.createGain();g.gain.setValueAtTime(0.16,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.06);s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);}
+function sfxDing(){if(!SOUND||!AC)return;const t=AC.currentTime;[660,990,1320].forEach((fr,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=fr;const ts=t+i*0.08;g.gain.setValueAtTime(0.0001,ts);g.gain.exponentialRampToValueAtTime(0.2,ts+0.02);g.gain.exponentialRampToValueAtTime(0.0001,ts+0.5);o.connect(g);g.connect(AC.destination);o.start(ts);o.stop(ts+0.55);});}
+function buzz(p){if(SOUND&&navigator.vibrate){try{navigator.vibrate(p);}catch(e){}}}
+$('#btnSound').textContent=SOUND?'🔊':'🔇';
+$('#btnSound').onclick=()=>{SOUND=!SOUND;localStorage.setItem('np_sound',SOUND?'1':'0');$('#btnSound').textContent=SOUND?'🔊':'🔇';if(SOUND){ensureAudio();sfxDing();}};
+
+/* ---------- boundary fetch (USGS National Map) ---------- */
+const BCACHE={};
+async function fetchBoundary(p){
+  if(p._terr)return null;if(BCACHE[p.id]!==undefined)return BCACHE[p.id];
+  const base='https://cartowfs.nationalmap.gov/arcgis/rest/services/govunits/MapServer/23/query?';
+  const url=base+'where='+encodeURIComponent("name LIKE '%"+p._usgs.replace(/'/g,"''")+"%'")+'&outFields=name&maxAllowableOffset=0.02&returnGeometry=true&outSR=4326&f=geojson';
+  try{const r=await fetch(url);const j=await r.json();if(j&&j.features&&j.features.length){BCACHE[p.id]={type:'FeatureCollection',features:j.features};return BCACHE[p.id];}}catch(e){}
+  BCACHE[p.id]=null;return null;
+}
 
 /* ---------- national overview ---------- */
 let usFeatures=null, stateEls={}, markEls={};
@@ -59,9 +79,9 @@ async function buildNational(){
   svg.append('g').selectAll('path').data(fc.features).join('path')
     .attr('d',path).attr('class','state').attr('data-name',d=>d.properties.name)
     .each(function(d){const name=d.properties.name;if(NAME2STATE[name]){d3.select(this).classed('clickable',true).on('click',()=>enterState(name));stateEls[name]=this;}});
-  // labels (mascot + abbr)
+  // labels: state abbr only (mascot is shown in the state view)
   const lg=svg.append('g');
-  fc.features.forEach(d=>{const st=NAME2STATE[d.properties.name];if(!st)return;const c=path.centroid(d);if(!c||isNaN(c[0]))return;const big=path.area(d)>240;const g=lg.append('g').attr('class','slabel');g.append('text').attr('class','m').attr('x',c[0]).attr('y',c[1]-(big?3:0)).text(st.m);if(big)g.append('text').attr('class','ab').attr('x',c[0]).attr('y',c[1]+9).text(st.ab);});
+  fc.features.forEach(d=>{const st=NAME2STATE[d.properties.name];if(!st)return;const c=path.centroid(d);if(!c||isNaN(c[0]))return;lg.append('text').attr('class','ab').attr('x',c[0]).attr('y',c[1]+3).text(st.ab);});
   // territory inset
   const tb={x:792,y:486,w:152,h:92};
   svg.append('rect').attr('x',tb.x).attr('y',tb.y).attr('width',tb.w).attr('height',tb.h).attr('rx',8).attr('fill','#0e2734').attr('stroke','#23495a').attr('stroke-width',.8);
@@ -81,7 +101,7 @@ function paintNational(){
 function buildListFallback(msg){const host=$('#mapHost');host.innerHTML='<div class="maperr">'+(msg||'')+'</div>';const grid=el('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;padding:6px 12px 14px';PARKS.forEach(p=>{const c=el('div');c.style.cssText='background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;font-size:12px';const vis=isVisited(p.id);c.innerHTML='<div style="font-size:18px">'+(vis?p.em:'▢')+'</div><b style="color:'+(vis?'#e7c06a':'#eaf2f0')+'">'+p.zh+'</b><div style="color:#8fb3b0">'+p.st+(vis?' ✓':'')+'</div>';c.onclick=()=>openInfo(p,true);grid.appendChild(c);});host.appendChild(grid);}
 
 /* ---------- state view ---------- */
-function setMode(m){MODE=m;$('#nationalView').style.display=m==='nation'?'':'none';$('#stateView').style.display=m==='state'?'block':'none';$('#regions').style.display=m==='nation'?'':'none';$('#hintbar').textContent=m==='nation'?'👆 点一个州放大，进去用手指刮开公园打卡':'👆 用手指在徽章上刮开 → 灰色变彩色即打卡';}
+function setMode(m){MODE=m;$('#nationalView').style.display=m==='nation'?'':'none';$('#stateView').style.display=m==='state'?'block':'none';$('#regions').style.display=m==='nation'?'':'none';$('#hintbar').textContent=m==='nation'?'👆 点一个州放大，进去用手指刮开公园':'👆 用手指刮开公园轮廓 → 灰色变彩色即打卡';}
 function backToNation(){setMode('nation');paintNational();renderProgress();window.scrollTo(0,0);}
 function enterState(name){
   const st=NAME2STATE[name];const feat=usFeatures&&usFeatures.find(f=>f.properties.name===name);
@@ -100,56 +120,77 @@ function enterState(name){
     if(window.d3&&feat){const svg=d3.select(stage).append('svg').attr('class','sv-bg').attr('viewBox','0 0 '+W+' '+Hs).style('width','100%').style('height',Hs+'px');proj=d3.geoMercator().fitExtent([[24,20],[W-24,Hs-20]],feat);svg.append('path').attr('d',d3.geoPath(proj)(feat));}
     // positions
     const pts=ps.map(p=>{let xy=proj?proj([p.lng,p.lat]):null;if(!xy)xy=[W/2,Hs/2];return {p,x:xy[0],y:xy[1]};});
-    relax(pts,ps.length>4?52:64,W,Hs);
-    const small=ps.length>4;
-    pts.forEach(pt=>stage.appendChild(makeMedallion(pt.p,pt.x,pt.y,small)));
-    const tip=el('div','scratch-tip');tip.textContent=PRIV||SHARE?'用手指刮开徽章':'刮开时会让你输入口令解锁';stage.appendChild(tip);
+    const FIG=ps.length>4?94:118;
+    relax(pts,FIG*0.84,W,Hs);
+    pts.forEach(pt=>{const ph=el('div','park-fig');ph.style.left=pt.x+'px';ph.style.top=pt.y+'px';ph.innerHTML='<div style="width:'+FIG+'px;height:'+FIG+'px;border-radius:50%;background:#143240;margin:0 auto"></div>';stage.appendChild(ph);fetchBoundary(pt.p).then(fc=>{ph.replaceWith(fc?makeFigure(pt.p,pt.x,pt.y,FIG,fc):makeMedallion(pt.p,pt.x,pt.y,ps.length>4));}).catch(()=>{ph.replaceWith(makeMedallion(pt.p,pt.x,pt.y,ps.length>4));});});
+    const tip=el('div','scratch-tip');tip.textContent=PRIV||SHARE?'用手指刮开公园轮廓':'刮开时会让你输入口令解锁';stage.appendChild(tip);
   },30);
 }
 function relax(pts,mind,W,H){for(let it=0;it<60;it++){let moved=false;for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const a=pts[i],b=pts[j];let dx=b.x-a.x,dy=b.y-a.y;let d=Math.hypot(dx,dy)||.01;if(d<mind){const push=(mind-d)/2;dx/=d;dy/=d;a.x-=dx*push;a.y-=dy*push;b.x+=dx*push;b.y+=dy*push;moved=true;}}for(const pt of pts){pt.x=Math.max(40,Math.min(W-40,pt.x));pt.y=Math.max(34,Math.min(H-40,pt.y));}if(!moved)break;}}
 
-/* ---------- medallion + scratch ---------- */
+/* ---------- scratch core (clipped, sound, haptics) ---------- */
+function countFoil(ctx,cv){const im=ctx.getImageData(0,0,cv.width,cv.height).data;let c=0;const step=Math.max(2,Math.floor(cv.width/18));for(let y=0;y<cv.height;y+=step)for(let x=0;x<cv.width;x+=step){if(im[(y*cv.width+x)*4+3]>=128)c++;}return c;}
+function circlePath(size){const r=size/2-1,c=size/2;return 'M '+c+' '+(c-r)+' a '+r+' '+r+' 0 1 0 0 '+(2*r)+' a '+r+' '+r+' 0 1 0 0 '+(-2*r)+' Z';}
+function initScratch(cv,grayEl,clipD,p,finalize){
+  setTimeout(()=>{
+    const dpr=Math.min(2,window.devicePixelRatio||1);const rect=cv.getBoundingClientRect();const size=Math.round(rect.width)||90;
+    cv.width=size*dpr;cv.height=size*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+    let clip=null;try{if(clipD)clip=new Path2D(clipD);}catch(e){}
+    ctx.save();if(clip)ctx.clip(clip);
+    const g=ctx.createLinearGradient(0,0,size,size);g.addColorStop(0,'#d6e0e4');g.addColorStop(.5,'#9fb0b8');g.addColorStop(1,'#6c7f88');
+    ctx.fillStyle=g;ctx.fillRect(0,0,size,size);
+    ctx.fillStyle='rgba(255,255,255,.18)';for(let i=0;i<24;i++)ctx.fillRect(Math.random()*size,Math.random()*size,2,2);
+    ctx.restore();
+    const total=Math.max(1,countFoil(ctx,cv));
+    ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='destination-out';ctx.lineCap='round';ctx.lineJoin='round';
+    let drawing=false,last=null,done=false,lastSfx=0;
+    const toLocal=e=>{const b=cv.getBoundingClientRect();return {x:(e.clientX-b.left)*size/b.width,y:(e.clientY-b.top)*size/b.height};};
+    const erase=(x,y)=>{ctx.beginPath();ctx.arc(x,y,size*0.15,0,7);ctx.fill();if(last){ctx.lineWidth=size*0.28;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(x,y);ctx.stroke();}last={x,y};};
+    const onDown=e=>{if(done)return;if(!SHARE&&!PRIV){ensureAudio();ensurePriv();return;}e.preventDefault();ensureAudio();drawing=true;last=null;try{cv.setPointerCapture(e.pointerId);}catch(_){}const l=toLocal(e);erase(l.x,l.y);};
+    const onMove=e=>{if(!drawing||done)return;e.preventDefault();const l=toLocal(e);erase(l.x,l.y);const now=performance.now();if(now-lastSfx>70){lastSfx=now;sfxScratch();buzz(6);}const f=1-countFoil(ctx,cv)/total;const k=Math.min(1,f/0.5);grayEl.style.filter='grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';if(f>=0.5){done=true;ctx.restore();ctx.clearRect(0,0,size,size);grayEl.style.filter='none';cv.style.transition='opacity .35s';cv.style.opacity='0';setTimeout(()=>cv.remove(),360);sfxDing();buzz([28,40,80]);finalize();}};
+    const onUp=()=>{drawing=false;last=null;};
+    cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);cv.addEventListener('pointerup',onUp);cv.addEventListener('pointerleave',onUp);cv.addEventListener('pointercancel',onUp);
+  },20);
+}
+/* ---------- park figure (real boundary shape) ---------- */
+function makeFigure(p,x,y,FIG,fc){
+  const vis=isVisited(p.id),tam=isTamper(p.id);let D='',cen=[FIG/2,FIG/2];
+  try{const proj=d3.geoMercator().fitExtent([[9,9],[FIG-9,FIG-9]],fc);const pg=d3.geoPath(proj);D=pg(fc)||'';cen=pg.centroid(fc);}catch(e){}
+  if(!D)return makeMedallion(p,x,y,FIG<104);
+  const cont=el('div','park-fig');cont.style.left=x+'px';cont.style.top=y+'px';
+  const disc=el('div','fig-disc');disc.style.width=FIG+'px';disc.style.height=FIG+'px';
+  const wrap=el('div','fig-wrap'+(vis?' color':''));
+  wrap.innerHTML='<svg class="fig-svg" viewBox="0 0 '+FIG+' '+FIG+'"><defs><linearGradient id="fg_'+p.id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e7e8c"/><stop offset="1" stop-color="#2f7d5a"/></linearGradient></defs><path d="'+D+'" fill="url(#fg_'+p.id+')" class="'+(vis||tam?'done':'')+'"'+(tam?' stroke="#ef6f6f"':'')+'/></svg>';
+  const emo=el('div','fig-emoji');emo.style.cssText='position:absolute;left:'+cen[0]+'px;top:'+cen[1]+'px;transform:translate(-50%,-50%);font-size:'+Math.round(FIG*0.3)+'px';emo.textContent=p.em;wrap.appendChild(emo);
+  disc.appendChild(wrap);
+  if(!vis){const cv=el('canvas','fig-canvas');disc.appendChild(cv);initScratch(cv,wrap,D,p,()=>{wrap.classList.add('color');const pa=wrap.querySelector('path');if(pa)pa.classList.add('done');finishCheck(p,cont);});}
+  const info=el('div','med-info');info.textContent='i';info.onclick=e=>{e.stopPropagation();openInfo(p);};disc.appendChild(info);
+  cont.appendChild(disc);
+  const nm=el('div','med-name');nm.style.marginTop='5px';nm.innerHTML=p.zh+'<span>'+p.en+'</span>'+(vis?'<div class="med-date">✓ '+S.recs[p.id].d+'</div>':(tam?'<div class="med-date" style="color:var(--bad)">⚠ 异常</div>':''));
+  cont.appendChild(nm);
+  return cont;
+}
+/* ---------- medallion fallback ---------- */
 function makeMedallion(p,x,y,small){
-  const vis=isVisited(p.id), tam=isTamper(p.id);
+  const vis=isVisited(p.id), tam=isTamper(p.id);const SZ=small?64:84;
   const m=el('div','medallion'+(small?' small':''));m.style.left=x+'px';m.style.top=y+'px';
-  const disc=el('div','med-disc');if(small)disc.style.cssText='width:64px;height:64px';
+  const disc=el('div','med-disc');disc.style.width=SZ+'px';disc.style.height=SZ+'px';
   const base=el('div','med-base'+(vis?' color':''));base.style.fontSize=small?'30px':'42px';base.textContent=p.em;
   const ring=el('div','med-ring'+(vis||tam?' done':''));if(tam)ring.style.borderColor='var(--bad)';
   disc.appendChild(base);disc.appendChild(ring);
-  if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);setTimeout(()=>initScratch(cv,base,p,m,small),30);}
+  if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,circlePath(SZ),p,()=>{ring.classList.add('done');finishCheck(p,m);});}
   const info=el('div','med-info');info.textContent='i';info.onclick=(e)=>{e.stopPropagation();openInfo(p);};disc.appendChild(info);
-  if(!vis&&!SHARE&&!PRIV){const lk=el('div','med-lock');lk.textContent='🔒';lk.onclick=async(e)=>{e.stopPropagation();if(await ensurePriv()){document.querySelectorAll('.med-lock').forEach(x=>x.remove());}};disc.appendChild(lk);}
   m.appendChild(disc);
   const nm=el('div','med-name');nm.innerHTML=p.zh+'<span>'+p.en+'</span>'+(vis?'<div class="med-date">✓ '+S.recs[p.id].d+'</div>':(tam?'<div class="med-date" style="color:var(--bad)">⚠ 异常</div>':''));
   m.appendChild(nm);
   return m;
 }
-function initScratch(cv,base,p,m,small){
-  const dpr=Math.min(2,window.devicePixelRatio||1);const r=cv.getBoundingClientRect();const size=r.width||(small?64:84);
-  cv.width=size*dpr;cv.height=size*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
-  const g=ctx.createLinearGradient(0,0,size,size);g.addColorStop(0,'#d6e0e4');g.addColorStop(.5,'#9fb0b8');g.addColorStop(1,'#6c7f88');
-  ctx.fillStyle=g;ctx.fillRect(0,0,size,size);
-  ctx.fillStyle='rgba(255,255,255,.18)';for(let i=0;i<26;i++)ctx.fillRect(Math.random()*size,Math.random()*size,2,2);
-  ctx.fillStyle='rgba(11,31,42,.4)';ctx.font='bold '+(small?9:11)+'px sans-serif';ctx.textAlign='center';ctx.fillText('刮',size/2,size/2+4);
-  ctx.globalCompositeOperation='destination-out';ctx.lineCap='round';ctx.lineJoin='round';
-  let drawing=false,last=null,done=false;
-  const toLocal=e=>{const b=cv.getBoundingClientRect();const cx=(e.clientX!=null?e.clientX:(e.touches&&e.touches[0].clientX))-b.left;const cy=(e.clientY!=null?e.clientY:(e.touches&&e.touches[0].clientY))-b.top;return {x:cx*size/b.width,y:cy*size/b.height};};
-  const erase=(x,y)=>{ctx.beginPath();ctx.arc(x,y,size*0.17,0,7);ctx.fill();if(last){ctx.lineWidth=size*0.32;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(x,y);ctx.stroke();}last={x,y};};
-  const frac=()=>{const im=ctx.getImageData(0,0,cv.width,cv.height).data;let cl=0,t=0;const step=Math.max(2,Math.floor(cv.width/16));for(let yy=0;yy<cv.height;yy+=step)for(let xx=0;xx<cv.width;xx+=step){t++;if(im[(yy*cv.width+xx)*4+3]<128)cl++;}return t?cl/t:0;};
-  const TH=0.5;
-  const onMove=e=>{if(!drawing||done)return;e.preventDefault();const l=toLocal(e);erase(l.x,l.y);const f=frac();const k=Math.min(1,f/TH);base.style.filter='grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';if(f>=TH){done=true;finishScratch();}};
-  const onDown=async e=>{if(done)return;if(!SHARE&&!PRIV){return;}e.preventDefault();drawing=true;last=null;try{cv.setPointerCapture(e.pointerId);}catch(_){}const l=toLocal(e);erase(l.x,l.y);};
-  const onUp=()=>{drawing=false;last=null;};
-  function finishScratch(){const b=cv.getBoundingClientRect();ctx.clearRect(0,0,size,size);base.style.filter='none';cv.style.transition='opacity .35s';cv.style.opacity='0';setTimeout(()=>cv.remove(),360);completeCheckIn(p,m);}
-  cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);cv.addEventListener('pointerup',onUp);cv.addEventListener('pointerleave',onUp);cv.addEventListener('pointercancel',onUp);
-}
-async function completeCheckIn(p,m){
-  if(SHARE)return;
-  if(!await ensurePriv()){return;}
+async function finishCheck(p,cont){
+  if(SHARE)return;if(!await ensurePriv())return;
   const date=today();const sig=await signRec(PRIV,p.id,date,'');
   S.recs[p.id]={d:date,n:'',s:sig};VALID[p.id]=true;saveLS();
-  if(m){const ring=m.querySelector('.med-ring');if(ring)ring.classList.add('done');const nm=m.querySelector('.med-name');if(nm&&!nm.querySelector('.med-date'))nm.insertAdjacentHTML('beforeend','<div class="med-date">✓ '+date+'</div>');const lk=m.querySelector('.med-lock');if(lk)lk.remove();}
-  const sd=$('#svDone');if(sd){const name=p._state;const ps=parksInState(name);sd.textContent=ps.filter(x=>isVisited(x.id)).length;}
+  const nm=cont&&cont.querySelector('.med-name');if(nm&&!nm.querySelector('.med-date'))nm.insertAdjacentHTML('beforeend','<div class="med-date">✓ '+date+'</div>');
+  const sd=$('#svDone');if(sd&&p._state){const ps=parksInState(p._state);sd.textContent=ps.filter(x=>isVisited(x.id)).length;}
   renderProgress();stampAnim();toast('已点亮 · '+p.zh);
 }
 
