@@ -372,9 +372,15 @@ function renderHome(){
     <div class="big">${a}${bb&&bb!=='✦'?'<small>'+bb+'</small>':''}</div>
     <div class="meta">${fmt(next.start)} · ${next.days} 天 · ${esc(next.transport)}<span id="herowx"></span></div>
     <span class="go">查看行程 →</span></div>`;
+  h+=`<a class="hero" href="parks.html" style="display:block;text-decoration:none;margin-top:12px;background:linear-gradient(135deg,#143a44,#0e2a38);border:1px solid #caa24a66">
+    <div class="lab" style="color:#e7c06a">🎁 小游戏 · 国家公园打卡</div>
+    <div class="nm">🗺️ 美国国家公园图鉴</div>
+    <div class="meta">63 座公园 · 刮开打卡 · 加密签名防改 · 可分享给朋友</div>
+    <span class="go" style="color:#e7c06a">开始刮卡 →</span></a>`;
   h+=`<div class="tiles">
-    <div class="tile" data-go="#/overview"><div class="ic2">🗺️</div><div class="tl">排期 & 季节</div><div class="ts">为什么这么排</div></div>
+    <div class="tile" data-go="#/overview"><div class="ic2">🗓️</div><div class="tl">排期 & 季节</div><div class="ts">为什么这么排</div></div>
     <div class="tile" data-go="#/guide"><div class="ic2">🧭</div><div class="tl">通用攻略</div><div class="ts">订票订房打包</div></div>
+    <a class="tile" href="parks.html" style="text-decoration:none"><div class="ic2">🏞️</div><div class="tl">公园打卡</div><div class="ts">63 座·刮刮卡</div></a>
     <div class="tile" data-go="__docs__"><div class="ic2">📄</div><div class="tl">全部文档</div><div class="ts">Google Drive</div></div>
   </div>`;
   h+='<div class="sec">全部行程</div><div class="card">';
