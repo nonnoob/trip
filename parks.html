@@ -92,6 +92,49 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#0d2531;border:1px solid var(--line);color:var(--ink);padding:11px 16px;border-radius:12px;font-size:13px;font-weight:700;z-index:70;opacity:0;transition:.3s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .foot{ text-align:center;color:#4f7480;font-size:11px;margin:18px 0 6px}
+/* national map: states + labels + park markers */
+.state{fill:#2a3942;stroke:#0b1f2a;stroke-width:.7;transition:fill .4s}
+.state.clickable{cursor:pointer}
+.state.has{fill:#33475220}
+.state.lit{fill:#3a4a3f}
+.state.done{fill:#4a5a3c}
+.state:hover{fill:#3d525f}
+.slabel{pointer-events:none}
+.slabel .ab{fill:#9fb6bd;font-size:8px;font-weight:800;text-anchor:middle;paint-order:stroke;stroke:#0b1f2a;stroke-width:2px}
+.slabel .m{font-size:11px;text-anchor:middle;filter:grayscale(.5) opacity(.85)}
+.pmark{font-size:13px;text-anchor:middle;cursor:pointer;filter:grayscale(1) opacity(.55);transition:filter .5s}
+.pmark.lit{filter:grayscale(0) opacity(1) drop-shadow(0 0 4px rgba(231,192,106,.9))}
+.hintbar{ text-align:center;color:#6f99a4;font-size:12px;margin:2px 14px 0}
+/* STATE VIEW */
+#stateView{display:none;animation:fadein .3s}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.sv-head{display:flex;align-items:center;gap:12px;margin:6px 14px 4px}
+.sv-back{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:800;cursor:pointer}
+.sv-mascot{font-size:40px;line-height:1}
+.sv-title{font-size:20px;font-weight:900}
+.sv-title small{display:block;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.5px}
+.sv-sub{margin-left:auto;text-align:right;font-size:12px;color:var(--muted)}
+.sv-sub b{color:var(--gold);font-size:18px}
+.sv-stage{position:relative;margin:8px 14px;border:1px solid var(--line);border-radius:18px;background:radial-gradient(120% 100% at 50% 0%,#123040,#0c2230);overflow:hidden;min-height:300px}
+.sv-bg{display:block;width:100%;height:auto}
+.sv-bg path{fill:#16323f;stroke:#2c5566;stroke-width:1}
+.sv-emptly{padding:46px 18px;text-align:center;color:var(--muted)}
+.sv-emptly .big2{font-size:46px}
+/* scratch medallion */
+.medallion{position:absolute;transform:translate(-50%,-50%);width:128px;text-align:center;touch-action:none}
+.medallion.small{width:104px}
+.med-disc{position:relative;width:84px;height:84px;margin:0 auto;border-radius:50%;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.4),inset 0 0 0 2px rgba(231,192,106,.25)}
+.med-base{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px;background:radial-gradient(circle at 50% 38%,#1c4a3a,#10303f);filter:grayscale(1) brightness(.8);transition:filter .6s}
+.med-base.color{filter:grayscale(0) brightness(1)}
+.med-ring{position:absolute;inset:0;border-radius:50%;border:2px dashed rgba(159,176,184,.5);pointer-events:none}
+.med-ring.done{border:2px solid var(--gold);box-shadow:0 0 10px rgba(231,192,106,.6)}
+.med-canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;cursor:grab;touch-action:none}
+.med-name{margin-top:6px;font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.15}
+.med-name span{display:block;font-size:10px;color:var(--muted);font-weight:600}
+.med-date{font-size:10px;color:var(--ok);font-weight:700;margin-top:1px}
+.med-lock{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(8,20,28,.5);z-index:3}
+.med-info{position:absolute;top:-4px;right:6px;width:20px;height:20px;border-radius:50%;background:#0d2531;border:1px solid var(--line);color:var(--muted);font-size:12px;line-height:18px;text-align:center;cursor:pointer;z-index:4}
+.scratch-tip{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:11px;color:#6f99a4;pointer-events:none}
 </style>
 </head>
 <body>
@@ -112,15 +155,20 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 </div>
 
 <div class="regions" id="regions"></div>
+<div class="hintbar" id="hintbar">👆 点一个州放大，进去用手指刮开公园打卡</div>
 
-<div class="mapwrap">
-  <div id="mapHost"></div>
-  <div class="legend">
-    <span><i style="background:var(--foil)"></i>未打卡（可刮开）</span>
-    <span><i style="background:var(--gold)"></i>已打卡</span>
-    <span><i style="background:var(--bad)"></i>签名异常</span>
+<div id="nationalView">
+  <div class="mapwrap">
+    <div id="mapHost"></div>
+    <div class="legend">
+      <span><i style="background:var(--foil)"></i>灰色 = 未点亮</span>
+      <span><i style="background:var(--gold)"></i>已点亮</span>
+      <span>点州进入 →</span>
+    </div>
   </div>
 </div>
+
+<div id="stateView"></div>
 
 <div class="foot" id="foot"></div>
 
@@ -199,6 +247,23 @@ const PARKS=[
 {id:'virginislands',en:'Virgin Islands',zh:'维尔京群岛',st:'美属维尔京',yr:1956,lat:18.34,lng:-64.73,rg:'属地',em:'🏝️',hl:'加勒比白沙滩 + 浮潜',intro:'圣约翰岛上三分之二的土地，加勒比海的白沙滩、珊瑚礁与热带山林。'},
 {id:'samoa',en:'National Park of American Samoa',zh:'美属萨摩亚',st:'美属萨摩亚',yr:1988,lat:-14.25,lng:-170.68,rg:'属地',em:'🐠',hl:'南太平洋雨林 + 珊瑚礁',intro:'美国唯一位于南半球的国家公园，南太平洋的热带雨林、珊瑚礁与狐蝠。'}
 ];
+const STATES=[
+{name:'Alabama',ab:'AL',zh:'阿拉巴马',m:'🏈'},{name:'Alaska',ab:'AK',zh:'阿拉斯加',m:'🐻‍❄️'},{name:'Arizona',ab:'AZ',zh:'亚利桑那',m:'🌵'},{name:'Arkansas',ab:'AR',zh:'阿肯色',m:'💎'},
+{name:'California',ab:'CA',zh:'加州',m:'🐻'},{name:'Colorado',ab:'CO',zh:'科罗拉多',m:'🏔️'},{name:'Connecticut',ab:'CT',zh:'康涅狄格',m:'🌳'},{name:'Delaware',ab:'DE',zh:'特拉华',m:'🐔'},
+{name:'District of Columbia',ab:'DC',zh:'华盛顿特区',m:'🏛️'},{name:'Florida',ab:'FL',zh:'佛州',m:'🐊'},{name:'Georgia',ab:'GA',zh:'佐治亚',m:'🍑'},{name:'Hawaii',ab:'HI',zh:'夏威夷',m:'🌺'},
+{name:'Idaho',ab:'ID',zh:'爱达荷',m:'🥔'},{name:'Illinois',ab:'IL',zh:'伊利诺伊',m:'🌽'},{name:'Indiana',ab:'IN',zh:'印第安纳',m:'🏎️'},{name:'Iowa',ab:'IA',zh:'爱荷华',m:'🌽'},
+{name:'Kansas',ab:'KS',zh:'堪萨斯',m:'🌻'},{name:'Kentucky',ab:'KY',zh:'肯塔基',m:'🐎'},{name:'Louisiana',ab:'LA',zh:'路易斯安那',m:'🎷'},{name:'Maine',ab:'ME',zh:'缅因',m:'🦞'},
+{name:'Maryland',ab:'MD',zh:'马里兰',m:'🦀'},{name:'Massachusetts',ab:'MA',zh:'马萨诸塞',m:'🎓'},{name:'Michigan',ab:'MI',zh:'密歇根',m:'🚗'},{name:'Minnesota',ab:'MN',zh:'明尼苏达',m:'🛶'},
+{name:'Mississippi',ab:'MS',zh:'密西西比',m:'🎸'},{name:'Missouri',ab:'MO',zh:'密苏里',m:'🎺'},{name:'Montana',ab:'MT',zh:'蒙大拿',m:'🦬'},{name:'Nebraska',ab:'NE',zh:'内布拉斯加',m:'🌽'},
+{name:'Nevada',ab:'NV',zh:'内华达',m:'🎰'},{name:'New Hampshire',ab:'NH',zh:'新罕布什尔',m:'🍁'},{name:'New Jersey',ab:'NJ',zh:'新泽西',m:'🎢'},{name:'New Mexico',ab:'NM',zh:'新墨西哥',m:'🎈'},
+{name:'New York',ab:'NY',zh:'纽约',m:'🗽'},{name:'North Carolina',ab:'NC',zh:'北卡',m:'✈️'},{name:'North Dakota',ab:'ND',zh:'北达科他',m:'🌾'},{name:'Ohio',ab:'OH',zh:'俄亥俄',m:'🌰'},
+{name:'Oklahoma',ab:'OK',zh:'俄克拉荷马',m:'🤠'},{name:'Oregon',ab:'OR',zh:'俄勒冈',m:'🦫'},{name:'Pennsylvania',ab:'PA',zh:'宾州',m:'🔔'},{name:'Rhode Island',ab:'RI',zh:'罗德岛',m:'⚓'},
+{name:'South Carolina',ab:'SC',zh:'南卡',m:'🌴'},{name:'South Dakota',ab:'SD',zh:'南达科他',m:'🗿'},{name:'Tennessee',ab:'TN',zh:'田纳西',m:'🎶'},{name:'Texas',ab:'TX',zh:'德州',m:'🤠'},
+{name:'Utah',ab:'UT',zh:'犹他',m:'🏜️'},{name:'Vermont',ab:'VT',zh:'佛蒙特',m:'🍁'},{name:'Virginia',ab:'VA',zh:'弗吉尼亚',m:'🐦'},{name:'Washington',ab:'WA',zh:'华盛顿',m:'🍎'},
+{name:'West Virginia',ab:'WV',zh:'西弗吉尼亚',m:'⛰️'},{name:'Wisconsin',ab:'WI',zh:'威斯康星',m:'🧀'},{name:'Wyoming',ab:'WY',zh:'怀俄明',m:'🦬'},{name:'Puerto Rico',ab:'PR',zh:'波多黎各',m:'🌴'}
+];
+const PARK_STATE_FALLBACK={deathvalley:'CA',greatsmoky:'TN',yellowstone:'WY'};
+window.STATES=STATES;window.PARK_STATE_FALLBACK=PARK_STATE_FALLBACK;
 const REGIONS=["东北","东南","落基山","西南","加州","西北","大平原","中西部","阿拉斯加","夏威夷","属地"];
 const TIERS=[[63,"全图鉴大师"],[50,"传奇旅人"],[40,"资深玩家"],[30,"旅行家"],[15,"探索者"],[5,"初心者"],[1,"新手上路"],[0,"未启程"]];
 window.PARKS=PARKS;window.REGIONS=REGIONS;window.TIERS=TIERS;
