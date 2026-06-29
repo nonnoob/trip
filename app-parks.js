@@ -153,11 +153,19 @@ function initScratch(cv,grayEl,clipD,p,finalize){
   },20);
 }
 /* ---------- park figure (real boundary shape) ---------- */
-function rewindFC(fc){const rr=a=>{if(Array.isArray(a)&&Array.isArray(a[0])&&typeof a[0][0]==='number')a.reverse();else if(Array.isArray(a))a.forEach(rr);};const f2=JSON.parse(JSON.stringify(fc));f2.features.forEach(f=>{if(f.geometry&&f.geometry.coordinates)rr(f.geometry.coordinates);});return f2;}
-function makeFigure(p,x,y,FIG,fc0){
-  const fc=rewindFC(fc0);
+function fcShape(fc,FIG){
+  const pts=[],rings=[];const dig=a=>{if(Array.isArray(a)&&Array.isArray(a[0])&&typeof a[0][0]==='number'){rings.push(a);for(const q of a)pts.push(q);}else if(Array.isArray(a))a.forEach(dig);};
+  (fc.features||[]).forEach(f=>{if(f.geometry)dig(f.geometry.coordinates);});
+  if(!pts.length)return null;
+  let proj;try{proj=d3.geoMercator().fitExtent([[9,9],[FIG-9,FIG-9]],{type:'MultiPoint',coordinates:pts});}catch(e){return null;}
+  let d='',minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+  rings.forEach(r=>{let started=false;r.forEach(pt=>{const q=proj(pt);if(!q||isNaN(q[0]))return;d+=(started?'L':'M')+q[0].toFixed(2)+','+q[1].toFixed(2);started=true;if(q[0]<minx)minx=q[0];if(q[0]>maxx)maxx=q[0];if(q[1]<miny)miny=q[1];if(q[1]>maxy)maxy=q[1];});if(started)d+='Z';});
+  if(!d)return null;
+  return {d:d,cen:[(minx+maxx)/2,(miny+maxy)/2]};
+}
+function makeFigure(p,x,y,FIG,fc){
   const vis=isVisited(p.id),tam=isTamper(p.id);let D='',cen=[FIG/2,FIG/2];
-  try{const proj=d3.geoMercator().fitExtent([[9,9],[FIG-9,FIG-9]],fc);const pg=d3.geoPath(proj);D=pg(fc)||'';cen=pg.centroid(fc);}catch(e){}
+  const sh=fcShape(fc,FIG);if(sh){D=sh.d;cen=sh.cen;}
   if(!D)return makeMedallion(p,x,y,FIG<104);
   const cont=el('div','park-fig');cont.style.left=x+'px';cont.style.top=y+'px';
   const disc=el('div','fig-disc');disc.style.width=FIG+'px';disc.style.height=FIG+'px';
