@@ -16,9 +16,9 @@ body{min-height:100dvh;padding:env(safe-area-inset-top) 0 calc(env(safe-area-ins
 a{color:var(--gold)}
 .wrap{max-width:760px;margin:0 auto;padding:14px}
 header.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;position:sticky;top:0;z-index:30;background:linear-gradient(180deg,rgba(11,31,42,.96),rgba(11,31,42,.7));backdrop-filter:blur(8px)}
-.back{font-size:14px;color:var(--muted);text-decoration:none;font-weight:700}
-.htitle{font-weight:800;font-size:16px;letter-spacing:.5px}
-.htitle small{display:block;font-weight:600;font-size:11px;color:var(--muted);letter-spacing:2px}
+.back{font-size:14px;color:var(--muted);text-decoration:none;font-weight:700;white-space:nowrap;flex:0 0 auto}
+.htitle{font-weight:800;font-size:16px;letter-spacing:.5px;white-space:nowrap;flex:0 0 auto}
+.htitle small{display:block;font-weight:600;font-size:11px;color:var(--muted);letter-spacing:2px;white-space:nowrap}
 .spacer{flex:1}
 .iconbtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer}
 .iconbtn.gold{border-color:var(--gold2);color:var(--gold)}
@@ -103,10 +103,10 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .state.done{fill:#4a5a3c}
 .state:hover{fill:#3d525f}
 .slabel{pointer-events:none}
-.slabel .ab{fill:#9fb6bd;font-size:8px;font-weight:800;text-anchor:middle;paint-order:stroke;stroke:#0b1f2a;stroke-width:2px}
+.ab{fill:#aac7ce;font-size:12px;font-weight:800;text-anchor:middle;paint-order:stroke;stroke:#0b1f2a;stroke-width:2.5px;pointer-events:none}
 .slabel .m{font-size:11px;text-anchor:middle;filter:grayscale(.5) opacity(.85)}
-.pmark{font-size:13px;text-anchor:middle;cursor:pointer;filter:grayscale(1) opacity(.55);transition:filter .5s}
-.pmark.lit{filter:grayscale(0) opacity(1) drop-shadow(0 0 4px rgba(231,192,106,.9))}
+.pmark{font-size:15px;text-anchor:middle;cursor:pointer;filter:grayscale(1) opacity(.6);transition:filter .5s}
+.pmark.lit{filter:grayscale(0) opacity(1) drop-shadow(0 0 5px rgba(231,192,106,.95))}
 .hintbar{ text-align:center;color:#6f99a4;font-size:12px;margin:2px 14px 0}
 /* STATE VIEW */
 #stateView{display:none;animation:fadein .3s}
@@ -148,6 +148,31 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .fig-svg path.done{stroke-width:2.2;filter:drop-shadow(0 0 6px rgba(231,192,106,.7))}
 .fig-emoji{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .fig-canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+/* map card caption */
+.mapcap{text-align:center;font-size:12px;font-weight:800;color:var(--gold);letter-spacing:1px;padding:10px 10px 0}
+.mapcap span{display:block;font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.5px;margin-top:3px}
+/* ===== phone layout ===== */
+@media (max-width:640px){
+  header.bar{gap:7px;padding:9px 11px}
+  .htitle{font-size:15px}
+  .htitle small{letter-spacing:1px;font-size:9.5px}
+  .iconbtn{padding:7px 9px;font-size:12px}
+  .prog{margin:6px 11px 2px;padding:11px 13px}
+  .big{font-size:26px}
+  .regions{margin:7px 11px 0}
+  /* national view fills the screen as one framed scratch card */
+  #nationalView .mapwrap{margin:8px 11px;display:flex;flex-direction:column;min-height:calc(100dvh - 232px);background:radial-gradient(115% 80% at 50% 16%,#11384c 0%,#0b1f2b 72%)}
+  #nationalView #mapHost{flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-height:0}
+  #nationalView #mapHost svg{width:100%;height:auto}
+  .mapcap{padding-top:12px}
+  .legend{padding:8px 10px 12px}
+  .ab{font-size:15px;stroke-width:3px}
+  .pmark{font-size:20px}
+  .pmark.lit{filter:grayscale(0) opacity(1) drop-shadow(0 0 6px rgba(231,192,106,1))}
+  /* state view a touch tighter */
+  .sv-head{margin:6px 11px 4px}
+  .sv-stage{margin:8px 11px}
+}
 </style>
 </head>
 <body>
@@ -172,6 +197,7 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 
 <div id="nationalView">
   <div class="mapwrap">
+    <div class="mapcap">✦ 刮开你的国家公园地图 ✦<span>点一个州 → 进入刮奖</span></div>
     <div id="mapHost"></div>
     <div class="legend">
       <span><i style="background:var(--foil)"></i>灰色 = 未点亮</span>
