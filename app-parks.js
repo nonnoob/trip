@@ -153,7 +153,9 @@ function initScratch(cv,grayEl,clipD,p,finalize){
   },20);
 }
 /* ---------- park figure (real boundary shape) ---------- */
-function makeFigure(p,x,y,FIG,fc){
+function rewindFC(fc){const rr=a=>{if(Array.isArray(a)&&Array.isArray(a[0])&&typeof a[0][0]==='number')a.reverse();else if(Array.isArray(a))a.forEach(rr);};const f2=JSON.parse(JSON.stringify(fc));f2.features.forEach(f=>{if(f.geometry&&f.geometry.coordinates)rr(f.geometry.coordinates);});return f2;}
+function makeFigure(p,x,y,FIG,fc0){
+  const fc=rewindFC(fc0);
   const vis=isVisited(p.id),tam=isTamper(p.id);let D='',cen=[FIG/2,FIG/2];
   try{const proj=d3.geoMercator().fitExtent([[9,9],[FIG-9,FIG-9]],fc);const pg=d3.geoPath(proj);D=pg(fc)||'';cen=pg.centroid(fc);}catch(e){}
   if(!D)return makeMedallion(p,x,y,FIG<104);
