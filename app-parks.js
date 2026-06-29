@@ -59,7 +59,7 @@ const BCACHE={};
 async function fetchBoundary(p){
   if(p._terr)return null;if(BCACHE[p.id]!==undefined)return BCACHE[p.id];
   const base='https://cartowfs.nationalmap.gov/arcgis/rest/services/govunits/MapServer/23/query?';
-  const url=base+'where='+encodeURIComponent("name LIKE '%"+p._usgs.replace(/'/g,"''")+"%'")+'&outFields=name&maxAllowableOffset=0.02&returnGeometry=true&outSR=4326&f=geojson';
+  const url=base+'where='+encodeURIComponent("name LIKE '%"+p._usgs.replace(/'/g,"''")+"%'")+'&outFields=name&maxAllowableOffset=0.002&geometryPrecision=4&returnGeometry=true&outSR=4326&f=geojson';
   try{const r=await fetch(url);const j=await r.json();if(j&&j.features&&j.features.length){BCACHE[p.id]={type:'FeatureCollection',features:j.features};return BCACHE[p.id];}}catch(e){}
   BCACHE[p.id]=null;return null;
 }
