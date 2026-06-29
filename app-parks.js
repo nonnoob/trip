@@ -101,7 +101,7 @@ function paintNational(){
 function buildListFallback(msg){const host=$('#mapHost');host.innerHTML='<div class="maperr">'+(msg||'')+'</div>';const grid=el('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;padding:6px 12px 14px';PARKS.forEach(p=>{const c=el('div');c.style.cssText='background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;font-size:12px';const vis=isVisited(p.id);c.innerHTML='<div style="font-size:18px">'+(vis?p.em:'▢')+'</div><b style="color:'+(vis?'#e7c06a':'#eaf2f0')+'">'+p.zh+'</b><div style="color:#8fb3b0">'+p.st+(vis?' ✓':'')+'</div>';c.onclick=()=>openInfo(p,true);grid.appendChild(c);});host.appendChild(grid);}
 
 /* ---------- state view ---------- */
-function setMode(m){MODE=m;$('#nationalView').style.display=m==='nation'?'':'none';$('#stateView').style.display=m==='state'?'block':'none';$('#regions').style.display=m==='nation'?'':'none';$('#hintbar').textContent=m==='nation'?'👆 点一个州放大，进去用手指刮开公园':'👆 用手指刮开公园轮廓 → 灰色变彩色即打卡';}
+function setMode(m){MODE=m;$('#nationalView').style.display=m==='nation'?'':'none';$('#stateView').style.display=m==='state'?'block':'none';$('#regions').style.display=m==='nation'?'':'none';}
 function backToNation(){setMode('nation');paintNational();renderProgress();window.scrollTo(0,0);}
 function enterState(name){
   const st=NAME2STATE[name];const feat=usFeatures&&usFeatures.find(f=>f.properties.name===name);
@@ -123,7 +123,6 @@ function enterState(name){
     const FIG=ps.length>4?94:118;
     relax(pts,FIG*0.84,W,Hs);
     pts.forEach(pt=>{const ph=el('div','park-fig');ph.style.left=pt.x+'px';ph.style.top=pt.y+'px';ph.innerHTML='<div style="width:'+FIG+'px;height:'+FIG+'px;border-radius:50%;background:#143240;margin:0 auto"></div>';stage.appendChild(ph);fetchBoundary(pt.p).then(fc=>{ph.replaceWith(fc?makeFigure(pt.p,pt.x,pt.y,FIG,fc):makeMedallion(pt.p,pt.x,pt.y,ps.length>4));}).catch(()=>{ph.replaceWith(makeMedallion(pt.p,pt.x,pt.y,ps.length>4));});});
-    const tip=el('div','scratch-tip');tip.textContent=PRIV||SHARE?'用手指刮开公园轮廓':'刮开时会让你输入口令解锁';stage.appendChild(tip);
   },30);
 }
 function relax(pts,mind,W,H){for(let it=0;it<60;it++){let moved=false;for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const a=pts[i],b=pts[j];let dx=b.x-a.x,dy=b.y-a.y;let d=Math.hypot(dx,dy)||.01;if(d<mind){const push=(mind-d)/2;dx/=d;dy/=d;a.x-=dx*push;a.y-=dy*push;b.x+=dx*push;b.y+=dy*push;moved=true;}}for(const pt of pts){pt.x=Math.max(40,Math.min(W-40,pt.x));pt.y=Math.max(34,Math.min(H-40,pt.y));}if(!moved)break;}}
@@ -264,7 +263,7 @@ $('#btnShare').onclick=()=>{
 };
 
 /* ---------- footer / help ---------- */
-$('#foot').innerHTML='共 63 座美国国家公园 · 打卡用数字签名保护 · <a id="helpL">玩法说明</a>';
+$('#foot').innerHTML='<a id="helpL" style="opacity:.7">玩法说明</a>';
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='helpL'){openModal('<h3>玩法 & 安全说明</h3><p>① 全美地图上每个州有名字、吉祥物，公园是灰色 emoji；<br>② 点一个州放大进入州视角；<br>③ 设一个口令生成你的「印章」；<br>④ 用<b>手指在公园徽章上刮</b>，灰色慢慢变彩色，刮够一半即完成打卡；<br>⑤ 右上「分享」生成带签名的链接发给朋友。</p><p style="color:#8fb3b0">安全：每次打卡用从口令派生的私钥做 ECDSA 签名，验证用公钥；别人改了本地数据或链接，签名一对就失效、标红「异常」。这是浏览器端防篡改，知道口令的人仍可签名，请保管好口令。</p><div class="mbtns"><button class="pri" id="ok">明白了</button></div>');$('#ok').onclick=closeModal;}});
 
 /* ---------- banner ---------- */
