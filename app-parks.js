@@ -54,18 +54,15 @@ function buzz(p){if(SOUND&&navigator.vibrate){try{navigator.vibrate(p);}catch(e)
 $('#btnSound').textContent=SOUND?'🔊':'🔇';
 $('#btnSound').onclick=()=>{SOUND=!SOUND;localStorage.setItem('np_sound',SOUND?'1':'0');$('#btnSound').textContent=SOUND?'🔊':'🔇';if(SOUND){ensureAudio();sfxDing();}};
 
-/* ---------- boundary fetch (USGS National Map) ---------- */
-const BCACHE={},BVER='b002';
-async function fetchBoundary(p){
-  if(p._terr)return null;if(BCACHE[p.id]!==undefined)return BCACHE[p.id];
-  const lk='npb_'+BVER+'_'+p.id;
-  try{const c=localStorage.getItem(lk);if(c){const v=JSON.parse(c);BCACHE[p.id]=v;return v;}}catch(e){}
-  const base='https://cartowfs.nationalmap.gov/arcgis/rest/services/govunits/MapServer/23/query?';
-  const url=base+'where='+encodeURIComponent("name LIKE '%"+p._usgs.replace(/'/g,"''")+"%'")+'&outFields=name&maxAllowableOffset=0.002&geometryPrecision=4&returnGeometry=true&outSR=4326&f=geojson';
-  try{const r=await fetch(url);const j=await r.json();if(j&&j.features&&j.features.length){const fc={type:'FeatureCollection',features:j.features};BCACHE[p.id]=fc;try{localStorage.setItem(lk,JSON.stringify(fc));}catch(e){}return fc;}}catch(e){}
-  BCACHE[p.id]=null;return null;
+/* ---------- boundary data (baked static, park-bounds.js) ---------- */
+const BCACHE={};
+function fetchBoundary(p){
+  if(BCACHE[p.id]!==undefined)return Promise.resolve(BCACHE[p.id]);
+  const rings=(window.PARK_BOUNDS||{})[p.id];
+  let fc=null;
+  if(rings&&rings.length){fc={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:rings.map(flat=>{const c=[];for(let i=0;i<flat.length;i+=2)c.push([flat[i],flat[i+1]]);return c;})}}]};}
+  BCACHE[p.id]=fc;return Promise.resolve(fc);
 }
-function prewarm(){let i=0;const go=()=>{if(i>=PARKS.length)return;const p=PARKS[i++];if(!p._terr&&BCACHE[p.id]===undefined&&!localStorage.getItem('npb_'+BVER+'_'+p.id)){fetchBoundary(p).finally(()=>setTimeout(go,400));}else setTimeout(go,0);};go();}
 
 /* ---------- national overview ---------- */
 let usFeatures=null, stateEls={}, markEls={};
@@ -280,7 +277,6 @@ async function init(){
   setMode('nation');
   await buildNational();
   renderProgress();
-  if(!SHARE&&window.d3)setTimeout(prewarm,1500);
 }
 init();
 })();
