@@ -115,7 +115,7 @@ function enterState(name){
   if(!ps.length){stage.innerHTML='<div class="sv-emptly"><div class="big2">'+(st?st.m:'🗺️')+'</div><div style="margin-top:8px">'+(st?st.zh:name)+'目前还没有国家公园</div><div style="font-size:12px;margin-top:4px">换个州试试 →</div></div>';return;}
   // measure then render backdrop + medallions
   setTimeout(()=>{
-    const W=Math.max(280,stage.clientWidth||340);const Hs=Math.round(W*0.62);stage.style.minHeight=Hs+'px';
+    const W=Math.max(280,stage.clientWidth||340);const vh=(window.innerHeight||700);const Hs=Math.round(Math.max(W*0.62,Math.min(W*1.5,vh-196)));stage.style.minHeight=Hs+'px';
     let proj=null;
     if(window.d3&&feat){const svg=d3.select(stage).append('svg').attr('class','sv-bg').attr('viewBox','0 0 '+W+' '+Hs).style('width','100%').style('height',Hs+'px');proj=d3.geoMercator().fitExtent([[24,20],[W-24,Hs-20]],feat);svg.append('path').attr('d',d3.geoPath(proj)(feat));}
     // positions
