@@ -69,7 +69,7 @@ let usFeatures=null, stateEls={}, markEls={};
 async function buildNational(){
   const host=$('#mapHost');
   if(!window.d3||!window.topojson)return buildListFallback('地图组件未能加载，已切换到列表模式。');
-  let us;try{us=window.__US||(window.__US=await d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json'));}catch(e){return buildListFallback('地图数据加载失败（可能离线），已切换到列表模式。');}
+  let us;try{us=window.__US||(window.__US=await d3.json('states-10m.json?v=1'));}catch(e){return buildListFallback('地图数据加载失败（可能离线），已切换到列表模式。');}
   const W=960,H=600;host.innerHTML='';
   const svg=d3.select(host).append('svg').attr('id','map').attr('viewBox','0 0 '+W+' '+H);
   const fc=topojson.feature(us,us.objects.states);usFeatures=fc.features;

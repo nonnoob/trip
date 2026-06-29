@@ -191,8 +191,8 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 <div class="modal" id="modal"><div class="mcard" id="mcard"></div></div>
 <div class="toast" id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="d3.min.js?v=1"></script>
+<script src="topojson.min.js?v=1"></script>
 <script>
 /* ===== 63 US National Parks ===== */
 const PARKS=[
@@ -282,6 +282,6 @@ const TIERS=[[63,"全图鉴大师"],[50,"传奇旅人"],[40,"资深玩家"],[30,
 window.PARKS=PARKS;window.REGIONS=REGIONS;window.TIERS=TIERS;
 </script>
 <script src="park-bounds.js?v=1"></script>
-<script src="app-parks.js?v=8"></script>
+<script src="app-parks.js?v=9"></script>
 </body>
 </html>
