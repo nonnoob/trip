@@ -25,7 +25,7 @@ async function signRec(priv,id,date,note){const sig=await subtle.sign({name:'ECD
 async function verifyRec(pub,id,date,note,sigB64){try{return await subtle.verify({name:'ECDSA',hash:'SHA-256'},pub,b64ToBytes(sigB64),msgOf(id,date,note));}catch(e){return false;}}
 
 /* ---------- state ---------- */
-let S={idn:null,recs:{}}, SHARE=false, PUBKEY=null, PRIV=null, VALID={}, curRegion=null, MODE='nation';
+let S={idn:null,recs:{}}, SHARE=false, PUBKEY=null, PRIV=null, VALID={}, curRegion=null, MODE='nation', curState=null;
 function loadLS(){try{const r=JSON.parse(localStorage.getItem(LS));if(r&&typeof r==='object')S={idn:r.idn||null,recs:r.recs||{}};}catch(e){}}
 function saveLS(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}}
 async function parseShare(){const m=location.hash.match(/share=([^&]+)/);if(!m)return false;try{const data=JSON.parse(b64urlToStr(m[1]));if(!data||!data.pub)return false;S={idn:{pub:data.pub,fp:data.fp||(await fingerprint(data.pub))},recs:data.recs||{}};SHARE=true;return true;}catch(e){return false;}}
@@ -102,7 +102,9 @@ function buildListFallback(msg){const host=$('#mapHost');host.innerHTML='<div cl
 
 /* ---------- state view ---------- */
 function setMode(m){MODE=m;$('#nationalView').style.display=m==='nation'?'':'none';$('#stateView').style.display=m==='state'?'block':'none';$('#regions').style.display=m==='nation'?'':'none';}
-function backToNation(){setMode('nation');paintNational();renderProgress();window.scrollTo(0,0);}
+function backToNation(){curState=null;setMode('nation');paintNational();renderProgress();window.scrollTo(0,0);if(!SHARE&&/(^#?|&)st=/.test(location.hash))history.replaceState(null,'',location.pathname+location.search);}
+function routeHash(){if(SHARE)return;const m=location.hash.match(/(?:[#&])st=([^&]+)/);if(m){const key=decodeURIComponent(m[1]);const name=ABBR2NAME[key]||(NAME2STATE[key]?key:null);if(name&&NAME2STATE[name]){if(curState!==name)enterState(name);return;}}if(MODE!=='nation')backToNation();}
+window.addEventListener('hashchange',routeHash);
 function enterState(name){
   const st=NAME2STATE[name];const feat=usFeatures&&usFeatures.find(f=>f.properties.name===name);
   const ps=parksInState(name);
@@ -112,6 +114,7 @@ function enterState(name){
   host.appendChild(head);head.querySelector('.sv-back').onclick=backToNation;
   const stage=el('div','sv-stage');host.appendChild(stage);
   setMode('state');window.scrollTo(0,0);
+  curState=name;if(!SHARE){const ab=(NAME2STATE[name]&&NAME2STATE[name].ab)||name;const h='#st='+encodeURIComponent(ab);if(location.hash!==h)history.replaceState(null,'',h);}
   if(!ps.length){stage.innerHTML='<div class="sv-emptly"><div class="big2">'+(st?st.m:'🗺️')+'</div><div style="margin-top:8px">'+(st?st.zh:name)+'目前还没有国家公园</div><div style="font-size:12px;margin-top:4px">换个州试试 →</div></div>';return;}
   // measure then render backdrop + medallions
   setTimeout(()=>{
@@ -293,6 +296,7 @@ async function init(){
   setMode('nation');
   await buildNational();
   renderProgress();
+  routeHash();
 }
 init();
 })();
