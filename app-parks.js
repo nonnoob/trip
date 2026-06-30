@@ -135,6 +135,7 @@ function enterState(name){
     if(ins[2]<ins[0]){const m=(ins[0]+ins[2])/2;ins[0]=ins[2]=m;}if(ins[3]<ins[1]){const m=(ins[1]+ins[3])/2;ins[1]=ins[3]=m;}
     relax(pts,hmin,vmin,ins,cen,proj,feat);
     pts.forEach(pt=>{const ph=el('div','park-fig');ph.style.left=pt.x+'px';ph.style.top=pt.y+'px';ph.innerHTML='<div style="width:'+FIG+'px;height:'+FIG+'px;border-radius:50%;background:#143240;margin:0 auto"></div>';stage.appendChild(ph);const small=FIG<92;const bel=pts.some(o=>o!==pt&&o.y>pt.y&&Math.abs(o.x-pt.x)<FIG*0.8&&(o.y-pt.y)<FIG*1.5);const abv=pts.some(o=>o!==pt&&o.y<pt.y&&Math.abs(o.x-pt.x)<FIG*0.8&&(pt.y-o.y)<FIG*1.5);const lt=bel&&!abv;fetchBoundary(pt.p).then(fc=>{ph.replaceWith(fc?makeFigure(pt.p,pt.x,pt.y,FIG,fc,lt):makeMedallion(pt.p,pt.x,pt.y,small,lt));}).catch(()=>{ph.replaceWith(makeMedallion(pt.p,pt.x,pt.y,small,lt));});});
+    setTimeout(()=>placeLabels(stage),140);
   },30);
 }
 function relax(pts,hmin,vmin,ins,cen,proj,feat){
@@ -146,6 +147,24 @@ function relax(pts,hmin,vmin,ins,cen,proj,feat){
   }
 }
 
+/* place each park name on the side (below/above/right/left) that overlaps neighbouring discs least */
+function placeLabels(stage){
+  const figs=[...stage.querySelectorAll('.park-fig,.medallion')];
+  const items=figs.map(f=>({nm:f.querySelector('.med-name'),disc:f.querySelector('.fig-disc')||f.querySelector('.med-disc')})).filter(o=>o.nm&&o.disc);
+  if(items.length<2)return;
+  const discRects=items.map(o=>o.disc.getBoundingClientRect());
+  const apply=(nm,pos)=>{nm.style.top=nm.style.bottom=nm.style.left=nm.style.right='';nm.style.position='absolute';nm.style.whiteSpace='nowrap';
+    if(pos==='below'){nm.style.top='calc(100% + 3px)';nm.style.left='50%';nm.style.transform='translateX(-50%)';}
+    else if(pos==='above'){nm.style.bottom='calc(100% + 3px)';nm.style.left='50%';nm.style.transform='translateX(-50%)';}
+    else if(pos==='right'){nm.style.left='calc(100% + 5px)';nm.style.top='50%';nm.style.transform='translateY(-50%)';}
+    else{nm.style.right='calc(100% + 5px)';nm.style.top='50%';nm.style.transform='translateY(-50%)';}};
+  const order=['below','above','right','left'];
+  items.forEach((o,i)=>{let best='below',bestCov=Infinity;
+    for(const pos of order){apply(o.nm,pos);const a=o.nm.getBoundingClientRect();const area=a.width*a.height||1;let cov=0;
+      discRects.forEach((r,j)=>{if(j===i)return;const ix=Math.max(0,Math.min(a.right,r.right)-Math.max(a.left,r.left));const iy=Math.max(0,Math.min(a.bottom,r.bottom)-Math.max(a.top,r.top));cov+=ix*iy;});
+      cov/=area;if(cov<bestCov-0.02){bestCov=cov;best=pos;}}
+    apply(o.nm,best);});
+}
 /* ---------- scratch core (clipped, sound, haptics) ---------- */
 function countFoil(ctx,cv){const im=ctx.getImageData(0,0,cv.width,cv.height).data;let c=0;const step=Math.max(2,Math.floor(cv.width/18));for(let y=0;y<cv.height;y+=step)for(let x=0;x<cv.width;x+=step){if(im[(y*cv.width+x)*4+3]>=128)c++;}return c;}
 function circlePath(size){const r=size/2-1,c=size/2;return 'M '+c+' '+(c-r)+' a '+r+' '+r+' 0 1 0 0 '+(2*r)+' a '+r+' '+r+' 0 1 0 0 '+(-2*r)+' Z';}
@@ -200,7 +219,7 @@ function makeFigure(p,x,y,FIG,fc,labelTop){
   if(!vis){const cv=el('canvas','fig-canvas');disc.appendChild(cv);initScratch(cv,wrap,D,p,()=>{wrap.classList.add('color');const pa=wrap.querySelector('path');if(pa)pa.classList.add('done');finishCheck(p,cont);});}
   const info=el('div','med-info');info.textContent='i';info.onclick=e=>{e.stopPropagation();openInfo(p);};disc.appendChild(info);
   cont.appendChild(disc);
-  const nm=el('div','med-name');nm.style.position='absolute';nm.style.left='50%';nm.style.transform='translateX(-50%)';nm.style.whiteSpace='nowrap';if(labelTop)nm.style.bottom='calc(100% + 3px)';else nm.style.top='calc(100% + 3px)';nm.innerHTML=p.zh+(vis?'<div class="med-date">✓ '+S.recs[p.id].d+'</div>':(tam?'<div class="med-date" style="color:var(--bad)">⚠ 异常</div>':''));
+  const nm=el('div','med-name');nm.style.position='absolute';nm.style.left='50%';nm.style.transform='translateX(-50%)';nm.style.top='calc(100% + 3px)';nm.style.whiteSpace='nowrap';nm.innerHTML=(vis?'<span style="color:var(--ok)">✓</span> ':'')+p.zh+(tam?' <span style="color:var(--bad)">⚠</span>':'');
   cont.appendChild(nm);
   return cont;
 }
@@ -215,7 +234,7 @@ function makeMedallion(p,x,y,small,labelTop){
   if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,circlePath(SZ),p,()=>{ring.classList.add('done');finishCheck(p,m);});}
   const info=el('div','med-info');info.textContent='i';info.onclick=(e)=>{e.stopPropagation();openInfo(p);};disc.appendChild(info);
   m.appendChild(disc);
-  const nm=el('div','med-name');if(labelTop){nm.style.position='absolute';nm.style.left='50%';nm.style.transform='translateX(-50%)';nm.style.bottom='calc(100% + 3px)';nm.style.whiteSpace='nowrap';}nm.innerHTML=p.zh+'<span>'+p.en+'</span>'+(vis?'<div class="med-date">✓ '+S.recs[p.id].d+'</div>':(tam?'<div class="med-date" style="color:var(--bad)">⚠ 异常</div>':''));
+  const nm=el('div','med-name');nm.style.position='absolute';nm.style.left='50%';nm.style.transform='translateX(-50%)';nm.style.top='calc(100% + 3px)';nm.style.whiteSpace='nowrap';nm.innerHTML=(vis?'<span style="color:var(--ok)">✓</span> ':'')+p.zh+(tam?' <span style="color:var(--bad)">⚠</span>':'');
   m.appendChild(nm);
   return m;
 }
