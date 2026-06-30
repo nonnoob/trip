@@ -132,7 +132,7 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .med-ring{position:absolute;inset:0;border-radius:50%;border:2px dashed rgba(159,176,184,.5);pointer-events:none}
 .med-ring.done{border:2px solid var(--gold);box-shadow:0 0 10px rgba(231,192,106,.6)}
 .med-canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;cursor:grab;touch-action:pinch-zoom}
-.med-name{margin-top:6px;font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.15}
+.med-name{margin-top:5px;font-size:12px;font-weight:800;color:var(--ink);line-height:1.15;text-shadow:0 1px 3px #07151d,0 0 3px #07151d,0 0 5px #07151d;position:relative;z-index:5}
 .med-name span{display:block;font-size:10px;color:var(--muted);font-weight:600}
 .med-date{font-size:10px;color:var(--ok);font-weight:700;margin-top:1px}
 .med-lock{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(8,20,28,.5);z-index:3}
@@ -308,6 +308,6 @@ const TIERS=[[63,"全图鉴大师"],[50,"传奇旅人"],[40,"资深玩家"],[30,
 window.PARKS=PARKS;window.REGIONS=REGIONS;window.TIERS=TIERS;
 </script>
 <script src="park-bounds.js?v=1"></script>
-<script src="app-parks.js?v=14"></script>
+<script src="app-parks.js?v=15"></script>
 </body>
 </html>

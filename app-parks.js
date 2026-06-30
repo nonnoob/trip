@@ -128,8 +128,8 @@ function enterState(name){
     else FIG=n>4?86:112;
     // start positions at true geographic location
     const pts=ps.map(p=>{let xy=proj?proj([p.lng,p.lat]):null;if(!xy||isNaN(xy[0]))xy=[cen[0],cen[1]];return {p,x:xy[0],y:xy[1]};});
-    // spacing: wider vertically so a disc never covers the name below it
-    const labelH=36;const hmin=FIG*0.9,vmin=FIG*0.98+labelH;
+    // tight spacing: keep figures near their true geographic positions (only nudge apart enough to not overlap)
+    const hmin=FIG*0.86,vmin=FIG*0.86;
     // keep disc centers inside the state's box
     let ins=bb?[bb[0][0]+FIG*0.5,bb[0][1]+FIG*0.5,bb[1][0]-FIG*0.5,bb[1][1]-FIG*0.5]:[FIG*0.5,FIG*0.5,W-FIG*0.5,Hs-FIG*0.5];
     if(ins[2]<ins[0]){const m=(ins[0]+ins[2])/2;ins[0]=ins[2]=m;}if(ins[3]<ins[1]){const m=(ins[1]+ins[3])/2;ins[1]=ins[3]=m;}
@@ -149,6 +149,12 @@ function relax(pts,hmin,vmin,ins,cen,proj,feat){
 /* ---------- scratch core (clipped, sound, haptics) ---------- */
 function countFoil(ctx,cv){const im=ctx.getImageData(0,0,cv.width,cv.height).data;let c=0;const step=Math.max(2,Math.floor(cv.width/18));for(let y=0;y<cv.height;y+=step)for(let x=0;x<cv.width;x+=step){if(im[(y*cv.width+x)*4+3]>=128)c++;}return c;}
 function circlePath(size){const r=size/2-1,c=size/2;return 'M '+c+' '+(c-r)+' a '+r+' '+r+' 0 1 0 0 '+(2*r)+' a '+r+' '+r+' 0 1 0 0 '+(-2*r)+' Z';}
+/* global active-touch tracker: a 2nd finger anywhere (even on another figure) = pinch, never scratch */
+const GPTRS=new Set();
+document.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')GPTRS.add(e.pointerId);},true);
+const _gpUp=e=>{GPTRS.delete(e.pointerId);};
+document.addEventListener('pointerup',_gpUp,true);document.addEventListener('pointercancel',_gpUp,true);
+function multiTouch(){return GPTRS.size>1;}
 function initScratch(cv,grayEl,clipD,p,finalize){
   setTimeout(()=>{
     const dpr=Math.min(2,window.devicePixelRatio||1);const rect=cv.getBoundingClientRect();const size=Math.round(rect.width)||90;
@@ -156,17 +162,17 @@ function initScratch(cv,grayEl,clipD,p,finalize){
     let clip=null;try{if(clipD)clip=new Path2D(clipD);}catch(e){}
     const grad=ctx.createLinearGradient(0,0,size,size);grad.addColorStop(0,'#d6e0e4');grad.addColorStop(.5,'#9fb0b8');grad.addColorStop(1,'#6c7f88');
     const paintFoil=()=>{ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='source-over';ctx.fillStyle=grad;ctx.fillRect(0,0,size,size);ctx.fillStyle='rgba(255,255,255,.18)';for(let i=0;i<24;i++)ctx.fillRect(Math.random()*size,Math.random()*size,2,2);ctx.restore();};
-    const startErase=()=>{ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='destination-out';ctx.lineCap='round';ctx.lineJoin='round';};
+    const startErase=()=>{ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='destination-out';ctx.globalAlpha=0.26;ctx.lineCap='round';ctx.lineJoin='round';};
     paintFoil();const total=Math.max(1,countFoil(ctx,cv));startErase();
-    let drawing=false,last=null,done=false,lastSfx=0,travel=0;const active=new Set();const TH=0.62,MINTRAVEL=size*1.15;
+    let drawing=false,last=null,done=false,lastSfx=0,travel=0;const TH=0.9,MINTRAVEL=size*0.6;
     const toLocal=e=>{const b=cv.getBoundingClientRect();return {x:(e.clientX-b.left)*size/b.width,y:(e.clientY-b.top)*size/b.height};};
     const erase=(x,y)=>{ctx.beginPath();ctx.arc(x,y,size*0.11,0,7);ctx.fill();if(last){travel+=Math.hypot(x-last.x,y-last.y);ctx.lineWidth=size*0.2;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(x,y);ctx.stroke();}last={x,y};};
     const recover=()=>{ctx.restore();paintFoil();startErase();done=false;drawing=false;last=null;travel=0;grayEl.style.filter='grayscale(1) brightness(.8)';};
     const reveal=()=>{ctx.restore();ctx.clearRect(0,0,size,size);grayEl.style.filter='none';cv.style.transition='opacity .35s';cv.style.opacity='0';setTimeout(()=>{cv.remove();},360);sfxDing();buzz([28,40,80]);finalize();};
     const commit=async()=>{if(!SHARE){const ok=await ensurePriv();if(!ok){recover();return;}}reveal();};
-    const onDown=e=>{if(done||SHARE)return;active.add(e.pointerId);if(active.size>1){drawing=false;try{cv.releasePointerCapture(e.pointerId);}catch(_){}return;}ensureAudio();e.preventDefault();drawing=true;last=null;try{cv.setPointerCapture(e.pointerId);}catch(_){}const l=toLocal(e);erase(l.x,l.y);};
-    const onMove=e=>{if(!drawing||done||active.size>1)return;e.preventDefault();const l=toLocal(e);erase(l.x,l.y);const now=performance.now();if(now-lastSfx>70){lastSfx=now;sfxScratch();buzz(6);}const f=1-countFoil(ctx,cv)/total;const k=Math.min(1,f/TH);grayEl.style.filter='grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';if(f>=TH&&travel>=MINTRAVEL){done=true;drawing=false;commit();}};
-    const clearP=e=>{if(e&&e.pointerId!=null)active.delete(e.pointerId);drawing=false;last=null;};
+    const onDown=e=>{if(done||SHARE)return;if(multiTouch()){drawing=false;return;}ensureAudio();e.preventDefault();drawing=true;last=null;try{cv.setPointerCapture(e.pointerId);}catch(_){}const l=toLocal(e);erase(l.x,l.y);};
+    const onMove=e=>{if(done)return;if(multiTouch()){if(drawing){drawing=false;try{cv.releasePointerCapture(e.pointerId);}catch(_){}}return;}if(!drawing)return;e.preventDefault();const l=toLocal(e);erase(l.x,l.y);const now=performance.now();if(now-lastSfx>70){lastSfx=now;sfxScratch();buzz(6);}const f=1-countFoil(ctx,cv)/total;const k=Math.min(1,f/TH);grayEl.style.filter='grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';if(f>=TH&&travel>=MINTRAVEL){done=true;drawing=false;commit();}};
+    const clearP=()=>{drawing=false;last=null;};
     cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);cv.addEventListener('pointerup',clearP);cv.addEventListener('pointerleave',clearP);cv.addEventListener('pointercancel',clearP);
   },20);
 }
