@@ -134,7 +134,7 @@ function enterState(name){
     let ins=bb?[bb[0][0]+FIG*0.5,bb[0][1]+FIG*0.5,bb[1][0]-FIG*0.5,bb[1][1]-FIG*0.5]:[FIG*0.5,FIG*0.5,W-FIG*0.5,Hs-FIG*0.5];
     if(ins[2]<ins[0]){const m=(ins[0]+ins[2])/2;ins[0]=ins[2]=m;}if(ins[3]<ins[1]){const m=(ins[1]+ins[3])/2;ins[1]=ins[3]=m;}
     relax(pts,hmin,vmin,ins,cen,proj,feat);
-    pts.forEach(pt=>{const ph=el('div','park-fig');ph.style.left=pt.x+'px';ph.style.top=pt.y+'px';ph.innerHTML='<div style="width:'+FIG+'px;height:'+FIG+'px;border-radius:50%;background:#143240;margin:0 auto"></div>';stage.appendChild(ph);const small=FIG<92;fetchBoundary(pt.p).then(fc=>{ph.replaceWith(fc?makeFigure(pt.p,pt.x,pt.y,FIG,fc):makeMedallion(pt.p,pt.x,pt.y,small));}).catch(()=>{ph.replaceWith(makeMedallion(pt.p,pt.x,pt.y,small));});});
+    pts.forEach(pt=>{const ph=el('div','park-fig');ph.style.left=pt.x+'px';ph.style.top=pt.y+'px';ph.innerHTML='<div style="width:'+FIG+'px;height:'+FIG+'px;border-radius:50%;background:#143240;margin:0 auto"></div>';stage.appendChild(ph);const small=FIG<92;const bel=pts.some(o=>o!==pt&&o.y>pt.y&&Math.abs(o.x-pt.x)<FIG*0.8&&(o.y-pt.y)<FIG*1.5);const abv=pts.some(o=>o!==pt&&o.y<pt.y&&Math.abs(o.x-pt.x)<FIG*0.8&&(pt.y-o.y)<FIG*1.5);const lt=bel&&!abv;fetchBoundary(pt.p).then(fc=>{ph.replaceWith(fc?makeFigure(pt.p,pt.x,pt.y,FIG,fc,lt):makeMedallion(pt.p,pt.x,pt.y,small,lt));}).catch(()=>{ph.replaceWith(makeMedallion(pt.p,pt.x,pt.y,small,lt));});});
   },30);
 }
 function relax(pts,hmin,vmin,ins,cen,proj,feat){
@@ -187,11 +187,11 @@ function fcShape(fc,FIG){
   if(!d)return null;
   return {d:d,cen:[(minx+maxx)/2,(miny+maxy)/2]};
 }
-function makeFigure(p,x,y,FIG,fc){
+function makeFigure(p,x,y,FIG,fc,labelTop){
   const vis=isVisited(p.id),tam=isTamper(p.id);let D='',cen=[FIG/2,FIG/2];
   const sh=fcShape(fc,FIG);if(sh){D=sh.d;cen=sh.cen;}
   if(!D)return makeMedallion(p,x,y,FIG<104);
-  const cont=el('div','park-fig');cont.style.left=x+'px';cont.style.top=y+'px';
+  const cont=el('div','park-fig');cont.style.left=x+'px';cont.style.top=y+'px';cont.style.width=FIG+'px';cont.style.height=FIG+'px';
   const disc=el('div','fig-disc');disc.style.width=FIG+'px';disc.style.height=FIG+'px';
   const wrap=el('div','fig-wrap'+(vis?' color':''));
   wrap.innerHTML='<svg class="fig-svg" viewBox="0 0 '+FIG+' '+FIG+'"><defs><linearGradient id="fg_'+p.id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e7e8c"/><stop offset="1" stop-color="#2f7d5a"/></linearGradient></defs><path d="'+D+'" fill="url(#fg_'+p.id+')" class="'+(vis||tam?'done':'')+'"'+(tam?' stroke="#ef6f6f"':'')+'/></svg>';
@@ -200,12 +200,12 @@ function makeFigure(p,x,y,FIG,fc){
   if(!vis){const cv=el('canvas','fig-canvas');disc.appendChild(cv);initScratch(cv,wrap,D,p,()=>{wrap.classList.add('color');const pa=wrap.querySelector('path');if(pa)pa.classList.add('done');finishCheck(p,cont);});}
   const info=el('div','med-info');info.textContent='i';info.onclick=e=>{e.stopPropagation();openInfo(p);};disc.appendChild(info);
   cont.appendChild(disc);
-  const nm=el('div','med-name');nm.style.marginTop='4px';nm.innerHTML=p.zh+(vis?'<div class="med-date">✓ '+S.recs[p.id].d+'</div>':(tam?'<div class="med-date" style="color:var(--bad)">⚠ 异常</div>':''));
+  const nm=el('div','med-name');nm.style.position='absolute';nm.style.left='50%';nm.style.transform='translateX(-50%)';nm.style.whiteSpace='nowrap';if(labelTop)nm.style.bottom='calc(100% + 3px)';else nm.style.top='calc(100% + 3px)';nm.innerHTML=p.zh+(vis?'<div class="med-date">✓ '+S.recs[p.id].d+'</div>':(tam?'<div class="med-date" style="color:var(--bad)">⚠ 异常</div>':''));
   cont.appendChild(nm);
   return cont;
 }
 /* ---------- medallion fallback ---------- */
-function makeMedallion(p,x,y,small){
+function makeMedallion(p,x,y,small,labelTop){
   const vis=isVisited(p.id), tam=isTamper(p.id);const SZ=small?64:84;
   const m=el('div','medallion'+(small?' small':''));m.style.left=x+'px';m.style.top=y+'px';
   const disc=el('div','med-disc');disc.style.width=SZ+'px';disc.style.height=SZ+'px';
@@ -215,7 +215,7 @@ function makeMedallion(p,x,y,small){
   if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,circlePath(SZ),p,()=>{ring.classList.add('done');finishCheck(p,m);});}
   const info=el('div','med-info');info.textContent='i';info.onclick=(e)=>{e.stopPropagation();openInfo(p);};disc.appendChild(info);
   m.appendChild(disc);
-  const nm=el('div','med-name');nm.innerHTML=p.zh+'<span>'+p.en+'</span>'+(vis?'<div class="med-date">✓ '+S.recs[p.id].d+'</div>':(tam?'<div class="med-date" style="color:var(--bad)">⚠ 异常</div>':''));
+  const nm=el('div','med-name');if(labelTop){nm.style.position='absolute';nm.style.left='50%';nm.style.transform='translateX(-50%)';nm.style.bottom='calc(100% + 3px)';nm.style.whiteSpace='nowrap';}nm.innerHTML=p.zh+'<span>'+p.en+'</span>'+(vis?'<div class="med-date">✓ '+S.recs[p.id].d+'</div>':(tam?'<div class="med-date" style="color:var(--bad)">⚠ 异常</div>':''));
   m.appendChild(nm);
   return m;
 }
