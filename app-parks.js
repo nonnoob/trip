@@ -134,8 +134,7 @@ function enterState(name){
     let ins=bb?[bb[0][0]+FIG*0.5,bb[0][1]+FIG*0.5,bb[1][0]-FIG*0.5,bb[1][1]-FIG*0.5]:[FIG*0.5,FIG*0.5,W-FIG*0.5,Hs-FIG*0.5];
     if(ins[2]<ins[0]){const m=(ins[0]+ins[2])/2;ins[0]=ins[2]=m;}if(ins[3]<ins[1]){const m=(ins[1]+ins[3])/2;ins[1]=ins[3]=m;}
     relax(pts,hmin,vmin,ins,cen,proj,feat);
-    pts.forEach(pt=>{const ph=el('div','park-fig');ph.style.left=pt.x+'px';ph.style.top=pt.y+'px';ph.innerHTML='<div style="width:'+FIG+'px;height:'+FIG+'px;border-radius:50%;background:#143240;margin:0 auto"></div>';stage.appendChild(ph);const small=FIG<92;const bel=pts.some(o=>o!==pt&&o.y>pt.y&&Math.abs(o.x-pt.x)<FIG*0.8&&(o.y-pt.y)<FIG*1.5);const abv=pts.some(o=>o!==pt&&o.y<pt.y&&Math.abs(o.x-pt.x)<FIG*0.8&&(pt.y-o.y)<FIG*1.5);const lt=bel&&!abv;fetchBoundary(pt.p).then(fc=>{ph.replaceWith(fc?makeFigure(pt.p,pt.x,pt.y,FIG,fc,lt):makeMedallion(pt.p,pt.x,pt.y,small,lt));}).catch(()=>{ph.replaceWith(makeMedallion(pt.p,pt.x,pt.y,small,lt));});});
-    setTimeout(()=>placeLabels(stage),140);
+    pts.forEach(pt=>{const ph=el('div','park-fig');ph.style.left=pt.x+'px';ph.style.top=pt.y+'px';ph.innerHTML='<div style="width:'+FIG+'px;height:'+FIG+'px;border-radius:50%;background:#143240;margin:0 auto"></div>';stage.appendChild(ph);const small=FIG<92;fetchBoundary(pt.p).then(fc=>{ph.replaceWith(fc?makeFigure(pt.p,pt.x,pt.y,FIG,fc):makeMedallion(pt.p,pt.x,pt.y,small));}).catch(()=>{ph.replaceWith(makeMedallion(pt.p,pt.x,pt.y,small));});});
   },30);
 }
 function relax(pts,hmin,vmin,ins,cen,proj,feat){
@@ -183,16 +182,17 @@ function initScratch(cv,grayEl,clipD,p,finalize){
     const paintFoil=()=>{ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='source-over';ctx.fillStyle=grad;ctx.fillRect(0,0,size,size);ctx.fillStyle='rgba(255,255,255,.18)';for(let i=0;i<24;i++)ctx.fillRect(Math.random()*size,Math.random()*size,2,2);ctx.restore();};
     const startErase=()=>{ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='destination-out';ctx.globalAlpha=0.26;ctx.lineCap='round';ctx.lineJoin='round';};
     paintFoil();const total=Math.max(1,countFoil(ctx,cv));startErase();
-    let drawing=false,last=null,done=false,lastSfx=0,travel=0;const TH=0.9,MINTRAVEL=size*0.6;
+    let drawing=false,last=null,done=false,lastSfx=0,travel=0;const TH=0.98,MINTRAVEL=size*0.6,TAP=size*0.25;
     const toLocal=e=>{const b=cv.getBoundingClientRect();return {x:(e.clientX-b.left)*size/b.width,y:(e.clientY-b.top)*size/b.height};};
     const erase=(x,y)=>{ctx.beginPath();ctx.arc(x,y,size*0.11,0,7);ctx.fill();if(last){travel+=Math.hypot(x-last.x,y-last.y);ctx.lineWidth=size*0.2;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(x,y);ctx.stroke();}last={x,y};};
     const recover=()=>{ctx.restore();paintFoil();startErase();done=false;drawing=false;last=null;travel=0;grayEl.style.filter='grayscale(1) brightness(.8)';};
     const reveal=()=>{ctx.restore();ctx.clearRect(0,0,size,size);grayEl.style.filter='none';cv.style.transition='opacity .35s';cv.style.opacity='0';setTimeout(()=>{cv.remove();},360);sfxDing();buzz([28,40,80]);finalize();};
     const commit=async()=>{if(!SHARE){const ok=await ensurePriv();if(!ok){recover();return;}}reveal();};
-    const onDown=e=>{if(done||SHARE)return;if(multiTouch()){drawing=false;return;}ensureAudio();e.preventDefault();drawing=true;last=null;try{cv.setPointerCapture(e.pointerId);}catch(_){}const l=toLocal(e);erase(l.x,l.y);};
+    const onDown=e=>{if(done)return;if(multiTouch()){drawing=false;return;}travel=0;last=toLocal(e);if(!SHARE){ensureAudio();e.preventDefault();drawing=true;try{cv.setPointerCapture(e.pointerId);}catch(_){}}};
     const onMove=e=>{if(done)return;if(multiTouch()){if(drawing){drawing=false;try{cv.releasePointerCapture(e.pointerId);}catch(_){}}return;}if(!drawing)return;e.preventDefault();const l=toLocal(e);erase(l.x,l.y);const now=performance.now();if(now-lastSfx>70){lastSfx=now;sfxScratch();buzz(6);}const f=1-countFoil(ctx,cv)/total;const k=Math.min(1,f/TH);grayEl.style.filter='grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';if(f>=TH&&travel>=MINTRAVEL){done=true;drawing=false;commit();}};
-    const clearP=()=>{drawing=false;last=null;};
-    cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);cv.addEventListener('pointerup',clearP);cv.addEventListener('pointerleave',clearP);cv.addEventListener('pointercancel',clearP);
+    const onUp=()=>{const tap=!done&&!multiTouch()&&travel<TAP;drawing=false;last=null;if(tap)openInfo(p);};
+    const onCancel=()=>{drawing=false;last=null;};
+    cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);cv.addEventListener('pointerup',onUp);cv.addEventListener('pointerleave',onCancel);cv.addEventListener('pointercancel',onCancel);
   },20);
 }
 /* ---------- park figure (real boundary shape) ---------- */
@@ -215,12 +215,10 @@ function makeFigure(p,x,y,FIG,fc,labelTop){
   const wrap=el('div','fig-wrap'+(vis?' color':''));
   wrap.innerHTML='<svg class="fig-svg" viewBox="0 0 '+FIG+' '+FIG+'"><defs><linearGradient id="fg_'+p.id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e7e8c"/><stop offset="1" stop-color="#2f7d5a"/></linearGradient></defs><path d="'+D+'" fill="url(#fg_'+p.id+')" class="'+(vis||tam?'done':'')+'"'+(tam?' stroke="#ef6f6f"':'')+'/></svg>';
   const emo=el('div','fig-emoji');emo.style.cssText='position:absolute;left:'+cen[0]+'px;top:'+cen[1]+'px;transform:translate(-50%,-50%);font-size:'+Math.round(FIG*0.3)+'px';emo.textContent=p.em;wrap.appendChild(emo);
-  disc.appendChild(wrap);
+  disc.appendChild(wrap);disc.style.cursor='pointer';
   if(!vis){const cv=el('canvas','fig-canvas');disc.appendChild(cv);initScratch(cv,wrap,D,p,()=>{wrap.classList.add('color');const pa=wrap.querySelector('path');if(pa)pa.classList.add('done');finishCheck(p,cont);});}
-  const info=el('div','med-info');info.textContent='i';info.onclick=e=>{e.stopPropagation();openInfo(p);};disc.appendChild(info);
+  else{disc.onclick=()=>openInfo(p);}
   cont.appendChild(disc);
-  const nm=el('div','med-name');nm.style.position='absolute';nm.style.left='50%';nm.style.transform='translateX(-50%)';nm.style.top='calc(100% + 3px)';nm.style.whiteSpace='nowrap';nm.innerHTML=(vis?'<span style="color:var(--ok)">✓</span> ':'')+p.zh+(tam?' <span style="color:var(--bad)">⚠</span>':'');
-  cont.appendChild(nm);
   return cont;
 }
 /* ---------- medallion fallback ---------- */
@@ -230,12 +228,10 @@ function makeMedallion(p,x,y,small,labelTop){
   const disc=el('div','med-disc');disc.style.width=SZ+'px';disc.style.height=SZ+'px';
   const base=el('div','med-base'+(vis?' color':''));base.style.fontSize=small?'30px':'42px';base.textContent=p.em;
   const ring=el('div','med-ring'+(vis||tam?' done':''));if(tam)ring.style.borderColor='var(--bad)';
-  disc.appendChild(base);disc.appendChild(ring);
+  disc.appendChild(base);disc.appendChild(ring);disc.style.cursor='pointer';
   if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,circlePath(SZ),p,()=>{ring.classList.add('done');finishCheck(p,m);});}
-  const info=el('div','med-info');info.textContent='i';info.onclick=(e)=>{e.stopPropagation();openInfo(p);};disc.appendChild(info);
+  else{disc.onclick=()=>openInfo(p);}
   m.appendChild(disc);
-  const nm=el('div','med-name');nm.style.position='absolute';nm.style.left='50%';nm.style.transform='translateX(-50%)';nm.style.top='calc(100% + 3px)';nm.style.whiteSpace='nowrap';nm.innerHTML=(vis?'<span style="color:var(--ok)">✓</span> ':'')+p.zh+(tam?' <span style="color:var(--bad)">⚠</span>':'');
-  m.appendChild(nm);
   return m;
 }
 async function finishCheck(p,cont){
@@ -263,7 +259,7 @@ function openInfo(p,fromList){
   }
   else if(vis){h+='<div class="hint">已点亮。想取消？长按下面。</div><button class="holdbtn danger" id="holdRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';}
   else if(fromList){h+='<button class="holdbtn" id="holdStamp"><span class="prog2"></span><span class="lab">长按盖章打卡 🅿️</span></button>';}
-  else{h+='<div class="hint">回到 '+(NAME2STATE[p._state]?NAME2STATE[p._state].zh:'地图')+' 视角，用手指刮开徽章即可打卡 ✨</div>';}
+  else{h+='<div class="hint">用手指刮开这枚徽章即可打卡 ✨</div>';}
   h+='</div>';
   sh.innerHTML=h;$('#scrim').classList.add('show');sh.classList.add('show');
   const hs=$('#holdStamp');if(hs)bindHold(hs,()=>doStamp(p));
