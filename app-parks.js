@@ -121,12 +121,12 @@ function enterState(name){
     const n=ps.length;
     // figure size scaled to fit inside the state's box
     let FIG;
-    if(bb){const bw=bb[1][0]-bb[0][0],bh=bb[1][1]-bb[0][1];FIG=Math.sqrt(Math.max(1,bw*bh)/n)*0.62;FIG=Math.min(FIG,bw*0.6,bh*0.42,116);FIG=Math.max(40,Math.round(FIG));}
+    if(bb){const bw=bb[1][0]-bb[0][0],bh=bb[1][1]-bb[0][1];FIG=Math.sqrt(Math.max(1,bw*bh)/n)*0.58;FIG=Math.min(FIG,bw*0.58,bh*0.4,112);FIG=Math.max(38,Math.round(FIG));}
     else FIG=n>4?86:112;
     // start positions at true geographic location
     const pts=ps.map(p=>{let xy=proj?proj([p.lng,p.lat]):null;if(!xy||isNaN(xy[0]))xy=[cen[0],cen[1]];return {p,x:xy[0],y:xy[1]};});
     // spacing: wider vertically so a disc never covers the name below it
-    const labelH=34;const hmin=FIG*0.94,vmin=FIG*0.7+labelH;
+    const labelH=36;const hmin=FIG*0.9,vmin=FIG*0.98+labelH;
     // keep disc centers inside the state's box
     let ins=bb?[bb[0][0]+FIG*0.5,bb[0][1]+FIG*0.5,bb[1][0]-FIG*0.5,bb[1][1]-FIG*0.5]:[FIG*0.5,FIG*0.5,W-FIG*0.5,Hs-FIG*0.5];
     if(ins[2]<ins[0]){const m=(ins[0]+ins[2])/2;ins[0]=ins[2]=m;}if(ins[3]<ins[1]){const m=(ins[1]+ins[3])/2;ins[1]=ins[3]=m;}
