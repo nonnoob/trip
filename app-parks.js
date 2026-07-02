@@ -113,6 +113,7 @@ function enterState(name){
   head.innerHTML='<button class="sv-back">‹ 全美</button><div class="sv-mascot">'+(st?st.m:'📍')+'</div><div class="sv-title">'+(st?st.zh:name)+'<small>'+name+'</small></div><div class="sv-sub"><b id="svDone">'+ps.filter(p=>isVisited(p.id)).length+'</b>/'+ps.length+' 座<br>已点亮</div>';
   host.appendChild(head);head.querySelector('.sv-back').onclick=backToNation;
   const stage=el('div','sv-stage');host.appendChild(stage);
+  stage.addEventListener('click',function(e){if(!e.target.closest('.sv-callout,.park-fig,.medallion'))closeCallout();});
   setMode('state');window.scrollTo(0,0);
   curState=name;if(!SHARE){const ab=(NAME2STATE[name]&&NAME2STATE[name].ab)||name;const h='#st='+encodeURIComponent(ab);if(location.hash!==h)history.replaceState(null,'',h);}
   if(!ps.length){stage.innerHTML='<div class="sv-emptly"><div class="big2">'+(st?st.m:'🗺️')+'</div><div style="margin-top:8px">'+(st?st.zh:name)+'目前还没有国家公园</div><div style="font-size:12px;margin-top:4px">换个州试试 →</div></div>';return;}
@@ -190,7 +191,7 @@ function initScratch(cv,grayEl,clipD,p,finalize){
     const commit=async()=>{if(!SHARE){const ok=await ensurePriv();if(!ok){recover();return;}}reveal();};
     const onDown=e=>{if(done)return;if(multiTouch()){drawing=false;return;}travel=0;last=toLocal(e);if(!SHARE){ensureAudio();e.preventDefault();drawing=true;try{cv.setPointerCapture(e.pointerId);}catch(_){}}};
     const onMove=e=>{if(done)return;if(multiTouch()){if(drawing){drawing=false;try{cv.releasePointerCapture(e.pointerId);}catch(_){}}return;}if(!drawing)return;e.preventDefault();const l=toLocal(e);erase(l.x,l.y);const now=performance.now();if(now-lastSfx>70){lastSfx=now;sfxScratch();buzz(6);}const left=countFoil(ctx,cv);const f=1-left/total;const k=Math.min(1,f/TH);grayEl.style.filter='grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';if((f>=TH||left<=1)&&travel>=MINTRAVEL){done=true;drawing=false;commit();}};
-    const onUp=()=>{const tap=!done&&!multiTouch()&&travel<TAP;drawing=false;last=null;if(tap)openInfo(p);};
+    const onUp=()=>{const tap=!done&&!multiTouch()&&travel<TAP;drawing=false;last=null;if(tap)showCallout(p);};
     const onCancel=()=>{drawing=false;last=null;};
     cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);cv.addEventListener('pointerup',onUp);cv.addEventListener('pointerleave',onCancel);cv.addEventListener('pointercancel',onCancel);
   },20);
@@ -210,27 +211,27 @@ function makeFigure(p,x,y,FIG,fc,labelTop){
   const vis=isVisited(p.id),tam=isTamper(p.id);let D='',cen=[FIG/2,FIG/2];
   const sh=fcShape(fc,FIG);if(sh){D=sh.d;cen=sh.cen;}
   if(!D)return makeMedallion(p,x,y,FIG<104);
-  const cont=el('div','park-fig');cont.style.left=x+'px';cont.style.top=y+'px';cont.style.width=FIG+'px';cont.style.height=FIG+'px';
+  const cont=el('div','park-fig');cont.style.left=x+'px';cont.style.top=y+'px';cont.style.width=FIG+'px';cont.style.height=FIG+'px';cont.setAttribute('data-id',p.id);
   const disc=el('div','fig-disc');disc.style.width=FIG+'px';disc.style.height=FIG+'px';
   const wrap=el('div','fig-wrap'+(vis?' color':''));
   wrap.innerHTML='<svg class="fig-svg" viewBox="0 0 '+FIG+' '+FIG+'"><defs><linearGradient id="fg_'+p.id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e7e8c"/><stop offset="1" stop-color="#2f7d5a"/></linearGradient></defs><path d="'+D+'" fill="url(#fg_'+p.id+')" class="'+(vis||tam?'done':'')+'"'+(tam?' stroke="#ef6f6f"':'')+'/></svg>';
   const emo=el('div','fig-emoji');emo.style.cssText='position:absolute;left:'+cen[0]+'px;top:'+cen[1]+'px;transform:translate(-50%,-50%);font-size:'+Math.round(FIG*0.3)+'px';emo.textContent=p.em;wrap.appendChild(emo);
   disc.appendChild(wrap);disc.style.cursor='pointer';
   if(!vis){const cv=el('canvas','fig-canvas');disc.appendChild(cv);initScratch(cv,wrap,D,p,()=>{wrap.classList.add('color');const pa=wrap.querySelector('path');if(pa)pa.classList.add('done');finishCheck(p,cont);});}
-  else{disc.onclick=()=>openInfo(p);}
+  else{disc.onclick=()=>showCallout(p);}
   cont.appendChild(disc);
   return cont;
 }
 /* ---------- medallion fallback ---------- */
 function makeMedallion(p,x,y,small,labelTop){
   const vis=isVisited(p.id), tam=isTamper(p.id);const SZ=small?64:84;
-  const m=el('div','medallion'+(small?' small':''));m.style.left=x+'px';m.style.top=y+'px';
+  const m=el('div','medallion'+(small?' small':''));m.style.left=x+'px';m.style.top=y+'px';m.setAttribute('data-id',p.id);
   const disc=el('div','med-disc');disc.style.width=SZ+'px';disc.style.height=SZ+'px';
   const base=el('div','med-base'+(vis?' color':''));base.style.fontSize=small?'30px':'42px';base.textContent=p.em;
   const ring=el('div','med-ring'+(vis||tam?' done':''));if(tam)ring.style.borderColor='var(--bad)';
   disc.appendChild(base);disc.appendChild(ring);disc.style.cursor='pointer';
   if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,circlePath(SZ),p,()=>{ring.classList.add('done');finishCheck(p,m);});}
-  else{disc.onclick=()=>openInfo(p);}
+  else{disc.onclick=()=>showCallout(p);}
   m.appendChild(disc);
   return m;
 }
@@ -272,6 +273,39 @@ $('#scrim').addEventListener('click',closeSheet);
 function fixSheetZoom(){const sh=$('#sheet'),vv=window.visualViewport;const on=vv&&sh.classList.contains('show')&&vv.scale>1.01;if(on){const gap=document.documentElement.clientHeight-(vv.offsetTop+vv.height);sh.style.left='0';sh.style.right='auto';sh.style.margin='0';sh.style.maxWidth='none';sh.style.width=vv.width+'px';sh.style.maxHeight=(vv.height*0.92)+'px';sh.style.transformOrigin='left bottom';sh.style.transform='translate('+vv.offsetLeft+'px,'+(-gap)+'px) scale('+(1/vv.scale)+')';}else{['left','right','margin','maxWidth','width','maxHeight','transformOrigin','transform'].forEach(function(k){sh.style[k]='';});}}
 function fixModalZoom(){const md=$('#modal'),card=$('#mcard'),vv=window.visualViewport;const on=vv&&md.classList.contains('show')&&vv.scale>1.01;if(on){md.style.left=vv.offsetLeft+'px';md.style.top=vv.offsetTop+'px';md.style.right='auto';md.style.bottom='auto';md.style.width=vv.width+'px';md.style.height=vv.height+'px';card.style.transformOrigin='center center';card.style.transform='scale('+(1/vv.scale)+')';}else{['left','top','right','bottom','width','height'].forEach(function(k){md.style[k]='';});card.style.transform='';card.style.transformOrigin='';}}
 if(window.visualViewport){const _zsync=function(){fixSheetZoom();fixModalZoom();};visualViewport.addEventListener('resize',_zsync);visualViewport.addEventListener('scroll',_zsync);}
+/* state view: show a park's detail as an in-map leader-line callout (scales with the map, so it stays readable when the user has pinch-zoomed) */
+function closeCallout(){document.querySelectorAll('.sv-callout,.sv-cline').forEach(function(x){x.remove();});}
+function showCallout(p){
+  const stage=document.querySelector('.sv-stage');if(!stage)return openInfo(p);
+  const fig=stage.querySelector('[data-id="'+p.id+'"]');if(!fig)return openInfo(p);
+  closeCallout();
+  const vis=isVisited(p.id),tam=isTamper(p.id),rec=S.recs[p.id];
+  const sr=stage.getBoundingClientRect(),fr=fig.getBoundingClientRect();
+  const fx=fr.left+fr.width/2-sr.left,fy=fr.top+fr.height/2-sr.top;const SW=stage.clientWidth,SH=stage.clientHeight;
+  const c=el('div','sv-callout');
+  let h='<span class="cx">✕</span><div class="ct"><span class="ce">'+p.em+'</span><div><div class="ch1">'+p.zh+'</div><div class="cen">'+p.en+' NP</div></div></div>';
+  h+='<div style="margin-top:6px"><span class="pill state">📍 '+p.st+'</span><span class="pill yr">设立 '+p.yr+'</span></div>';
+  h+='<div class="cintro">'+p.intro+'</div><div class="chl">✨ '+p.hl+'</div><div class="cstat">';
+  if(SHARE)h+='<span style="color:var(--muted)">👁 只读</span>'+(vis?' · <span style="color:var(--ok)">✓ '+rec.d+'</span>':'');
+  else if(tam)h+='<span style="color:var(--bad)">⚠ 签名异常（已改动）</span>';
+  else if(vis)h+='<span style="color:var(--ok)">✓ 已点亮 · '+rec.d+'</span><button class="holdbtn danger" id="cRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';
+  else h+='<span style="color:var(--muted)">用手指刮开徽章即可打卡 ✨</span>';
+  h+='</div>';c.innerHTML=h;stage.appendChild(c);
+  const cw=c.offsetWidth,ch=c.offsetHeight;
+  let left=fx+fr.width/2+12,side='r';
+  if(left+cw>SW-6){left=fx-fr.width/2-12-cw;side='l';}
+  left=Math.max(6,Math.min(left,SW-cw-6));
+  let top=Math.max(6,Math.min(fy-ch/2,SH-ch-6));
+  c.style.left=left+'px';c.style.top=top+'px';
+  const tx=side==='r'?left:left+cw,ty=Math.max(top+14,Math.min(top+ch-14,fy));
+  const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('class','sv-cline');svg.setAttribute('width',SW);svg.setAttribute('height',SH);svg.setAttribute('viewBox','0 0 '+SW+' '+SH);
+  const ln=document.createElementNS(ns,'line');ln.setAttribute('x1',fx);ln.setAttribute('y1',fy);ln.setAttribute('x2',tx);ln.setAttribute('y2',ty);ln.setAttribute('stroke','#e7c06a');ln.setAttribute('stroke-width','1.5');ln.setAttribute('stroke-dasharray','3 3');ln.setAttribute('opacity','.9');
+  const dot=document.createElementNS(ns,'circle');dot.setAttribute('cx',fx);dot.setAttribute('cy',fy);dot.setAttribute('r','3.5');dot.setAttribute('fill','#e7c06a');
+  svg.appendChild(ln);svg.appendChild(dot);stage.appendChild(svg);
+  c.querySelector('.cx').onclick=function(e){e.stopPropagation();closeCallout();};
+  const rm=c.querySelector('#cRemove');if(rm)bindHold(rm,function(){doRemove(p);});
+}
 function bindHold(btn,onDone){let raf=null,start=0,done=false;const bar=btn.querySelector('.prog2');const DUR=820;const step=t=>{if(!start)start=t;const k=Math.min(1,(t-start)/DUR);bar.style.width=(k*100)+'%';if(k>=1){done=true;cancel();onDone();}else raf=requestAnimationFrame(step);};const begin=e=>{e.preventDefault();done=false;start=0;raf=requestAnimationFrame(step);};const cancel=()=>{if(raf)cancelAnimationFrame(raf);raf=null;if(!done)bar.style.width='0%';};btn.addEventListener('pointerdown',begin);btn.addEventListener('pointerup',cancel);btn.addEventListener('pointerleave',cancel);btn.addEventListener('pointercancel',cancel);}
 async function doStamp(p){if(SHARE)return;if(!await ensurePriv())return;const date=today();const sig=await signRec(PRIV,p.id,date,'');S.recs[p.id]={d:date,n:'',s:sig};VALID[p.id]=true;saveLS();paintNational();renderProgress();closeSheet();stampAnim();toast('已点亮 · '+p.zh);}
 async function doRemove(p){if(SHARE)return;if(!await ensurePriv())return;delete S.recs[p.id];delete VALID[p.id];saveLS();paintNational();renderProgress();closeSheet();toast('已取消打卡');if(MODE==='state'&&p._state)enterState(p._state);}
