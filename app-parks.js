@@ -261,12 +261,17 @@ function openInfo(p,fromList){
   else if(fromList){h+='<button class="holdbtn" id="holdStamp"><span class="prog2"></span><span class="lab">长按盖章打卡 🅿️</span></button>';}
   else{h+='<div class="hint">用手指刮开这枚徽章即可打卡 ✨</div>';}
   h+='</div>';
-  sh.innerHTML=h;$('#scrim').classList.add('show');sh.classList.add('show');
+  sh.innerHTML=h;$('#scrim').classList.add('show');sh.classList.add('show');fixSheetZoom();
   const hs=$('#holdStamp');if(hs)bindHold(hs,()=>doStamp(p));
   const hr=$('#holdRemove');if(hr)bindHold(hr,()=>doRemove(p));
 }
-function closeSheet(){$('#scrim').classList.remove('show');$('#sheet').classList.remove('show');}
+function closeSheet(){$('#scrim').classList.remove('show');$('#sheet').classList.remove('show');fixSheetZoom();}
 $('#scrim').addEventListener('click',closeSheet);
+/* keep the detail sheet / modal readable when the page itself is pinch-zoomed:
+   re-anchor them to the visible (visual) viewport and counter-scale by 1/scale */
+function fixSheetZoom(){const sh=$('#sheet'),vv=window.visualViewport;const on=vv&&sh.classList.contains('show')&&vv.scale>1.01;if(on){const gap=document.documentElement.clientHeight-(vv.offsetTop+vv.height);sh.style.left='0';sh.style.right='auto';sh.style.margin='0';sh.style.maxWidth='none';sh.style.width=vv.width+'px';sh.style.maxHeight=(vv.height*0.92)+'px';sh.style.transformOrigin='left bottom';sh.style.transform='translate('+vv.offsetLeft+'px,'+(-gap)+'px) scale('+(1/vv.scale)+')';}else{['left','right','margin','maxWidth','width','maxHeight','transformOrigin','transform'].forEach(function(k){sh.style[k]='';});}}
+function fixModalZoom(){const md=$('#modal'),card=$('#mcard'),vv=window.visualViewport;const on=vv&&md.classList.contains('show')&&vv.scale>1.01;if(on){md.style.left=vv.offsetLeft+'px';md.style.top=vv.offsetTop+'px';md.style.right='auto';md.style.bottom='auto';md.style.width=vv.width+'px';md.style.height=vv.height+'px';card.style.transformOrigin='center center';card.style.transform='scale('+(1/vv.scale)+')';}else{['left','top','right','bottom','width','height'].forEach(function(k){md.style[k]='';});card.style.transform='';card.style.transformOrigin='';}}
+if(window.visualViewport){const _zsync=function(){fixSheetZoom();fixModalZoom();};visualViewport.addEventListener('resize',_zsync);visualViewport.addEventListener('scroll',_zsync);}
 function bindHold(btn,onDone){let raf=null,start=0,done=false;const bar=btn.querySelector('.prog2');const DUR=820;const step=t=>{if(!start)start=t;const k=Math.min(1,(t-start)/DUR);bar.style.width=(k*100)+'%';if(k>=1){done=true;cancel();onDone();}else raf=requestAnimationFrame(step);};const begin=e=>{e.preventDefault();done=false;start=0;raf=requestAnimationFrame(step);};const cancel=()=>{if(raf)cancelAnimationFrame(raf);raf=null;if(!done)bar.style.width='0%';};btn.addEventListener('pointerdown',begin);btn.addEventListener('pointerup',cancel);btn.addEventListener('pointerleave',cancel);btn.addEventListener('pointercancel',cancel);}
 async function doStamp(p){if(SHARE)return;if(!await ensurePriv())return;const date=today();const sig=await signRec(PRIV,p.id,date,'');S.recs[p.id]={d:date,n:'',s:sig};VALID[p.id]=true;saveLS();paintNational();renderProgress();closeSheet();stampAnim();toast('已点亮 · '+p.zh);}
 async function doRemove(p){if(SHARE)return;if(!await ensurePriv())return;delete S.recs[p.id];delete VALID[p.id];saveLS();paintNational();renderProgress();closeSheet();toast('已取消打卡');if(MODE==='state'&&p._state)enterState(p._state);}
@@ -277,8 +282,8 @@ async function ensurePriv(){if(PRIV)return true;if(!S.idn){const made=await open
 function stampAnim(){const s=el('div','stamp-anim');s.textContent='VISITED';document.body.appendChild(s);requestAnimationFrame(()=>s.classList.add('go'));setTimeout(()=>s.remove(),1000);}
 
 /* ---------- modal ---------- */
-function openModal(html){const m=$('#modal');$('#mcard').innerHTML=html;m.classList.add('show');return m;}
-function closeModal(){$('#modal').classList.remove('show');}
+function openModal(html){const m=$('#modal');$('#mcard').innerHTML=html;m.classList.add('show');fixModalZoom();return m;}
+function closeModal(){$('#modal').classList.remove('show');fixModalZoom();}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
 function askPass(title,ph){return new Promise(res=>{openModal('<h3>'+title+'</h3><input class="inp" type="password" id="pp" placeholder="'+(ph||'口令')+'" autocomplete="off"><div class="mbtns"><button id="pc">取消</button><button class="pri" id="po">确定</button></div>');const inp=$('#pp');inp.focus();const done=v=>{closeModal();res(v);};$('#po').onclick=()=>done(inp.value||'');$('#pc').onclick=()=>done(null);inp.onkeydown=e=>{if(e.key==='Enter')done(inp.value||'');};});}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800);}
