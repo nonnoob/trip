@@ -183,16 +183,18 @@ function initScratch(cv,grayEl,clipD,p,finalize){
     const paintFoil=()=>{ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='source-over';ctx.fillStyle=grad;ctx.fillRect(0,0,size,size);ctx.fillStyle='rgba(255,255,255,.18)';for(let i=0;i<24;i++)ctx.fillRect(Math.random()*size,Math.random()*size,2,2);ctx.restore();};
     const startErase=()=>{ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='destination-out';ctx.globalAlpha=0.26;ctx.lineCap='round';ctx.lineJoin='round';};
     paintFoil();const total=Math.max(1,countFoil(ctx,cv));startErase();
-    let drawing=false,last=null,done=false,lastSfx=0,travel=0;const TH=1,MINTRAVEL=size*0.6,TAP=size*0.25;
+    let last=null,done=false,lastSfx=0,travel=0,armed=false,armT=null,downL=null,moved=false;const TH=1,TAP=size*0.25,ARM_MS=350,MOVECANCEL=8;
     const toLocal=e=>{const b=cv.getBoundingClientRect();return {x:(e.clientX-b.left)*size/b.width,y:(e.clientY-b.top)*size/b.height};};
     const erase=(x,y)=>{ctx.beginPath();ctx.arc(x,y,size*0.11,0,7);ctx.fill();if(last){travel+=Math.hypot(x-last.x,y-last.y);ctx.lineWidth=size*0.2;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(x,y);ctx.stroke();}last={x,y};};
-    const recover=()=>{ctx.restore();paintFoil();startErase();done=false;drawing=false;last=null;travel=0;grayEl.style.filter='grayscale(1) brightness(.8)';};
+    const recover=()=>{ctx.restore();paintFoil();startErase();done=false;armed=false;cv.classList.remove('armed');last=null;travel=0;grayEl.style.filter='grayscale(1) brightness(.8)';};
     const reveal=()=>{ctx.restore();ctx.clearRect(0,0,size,size);grayEl.style.filter='none';cv.style.transition='opacity .35s';cv.style.opacity='0';setTimeout(()=>{cv.remove();},360);sfxDing();buzz([28,40,80]);finalize();};
     const commit=async()=>{if(!SHARE){const ok=await ensurePriv();if(!ok){recover();return;}}reveal();};
-    const onDown=e=>{if(done)return;if(multiTouch()){drawing=false;return;}travel=0;last=toLocal(e);if(!SHARE){ensureAudio();e.preventDefault();drawing=true;try{cv.setPointerCapture(e.pointerId);}catch(_){}}};
-    const onMove=e=>{if(done)return;if(multiTouch()){if(drawing){drawing=false;try{cv.releasePointerCapture(e.pointerId);}catch(_){}}return;}if(!drawing)return;e.preventDefault();const l=toLocal(e);erase(l.x,l.y);const now=performance.now();if(now-lastSfx>70){lastSfx=now;sfxScratch();buzz(6);}const left=countFoil(ctx,cv);const f=1-left/total;const k=Math.min(1,f/TH);grayEl.style.filter='grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';if((f>=TH||left<=1)&&travel>=MINTRAVEL){done=true;drawing=false;commit();}};
-    const onUp=()=>{const tap=!done&&!multiTouch()&&travel<TAP;drawing=false;last=null;if(tap)showCallout(p);};
-    const onCancel=()=>{drawing=false;last=null;};
+    const setArmed=(v)=>{armed=v;if(v){cv.classList.add('armed');buzz(18);}else{cv.classList.remove('armed');}};
+    const clearArm=()=>{if(armT){clearTimeout(armT);armT=null;}};
+    const onDown=e=>{if(done||SHARE)return;if(multiTouch())return;ensureAudio();downL=toLocal(e);last=downL;travel=0;moved=false;setArmed(false);try{cv.setPointerCapture(e.pointerId);}catch(_){}clearArm();armT=setTimeout(()=>{armT=null;if(!moved&&!done)setArmed(true);},ARM_MS);};
+    const onMove=e=>{if(done)return;if(multiTouch()){clearArm();setArmed(false);try{cv.releasePointerCapture(e.pointerId);}catch(_){}return;}const l=toLocal(e);if(!armed){if(downL&&Math.hypot(l.x-downL.x,l.y-downL.y)>MOVECANCEL){moved=true;clearArm();}last=l;return;}e.preventDefault();erase(l.x,l.y);const now=performance.now();if(now-lastSfx>70){lastSfx=now;sfxScratch();buzz(6);}const left=countFoil(ctx,cv);const f=1-left/total;const k=Math.min(1,f/TH);grayEl.style.filter='grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';if(f>=TH||left<=1){done=true;setArmed(false);commit();}};
+    const onUp=()=>{clearArm();const tap=!done&&!armed&&!moved&&travel<TAP&&!multiTouch();setArmed(false);last=null;if(tap)showCallout(p);};
+    const onCancel=()=>{clearArm();setArmed(false);last=null;};
     cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);cv.addEventListener('pointerup',onUp);cv.addEventListener('pointerleave',onCancel);cv.addEventListener('pointercancel',onCancel);
   },20);
 }
@@ -260,7 +262,7 @@ function openInfo(p,fromList){
   }
   else if(vis){h+='<div class="hint">已点亮。想取消？长按下面。</div><button class="holdbtn danger" id="holdRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';}
   else if(fromList){h+='<button class="holdbtn" id="holdStamp"><span class="prog2"></span><span class="lab">长按盖章打卡 🅿️</span></button>';}
-  else{h+='<div class="hint">用手指刮开这枚徽章即可打卡 ✨</div>';}
+  else{h+='<div class="hint">长按徽章（约半秒）再刮开即可打卡 ✨</div>';}
   h+='</div>';
   sh.innerHTML=h;$('#scrim').classList.add('show');sh.classList.add('show');fixSheetZoom();
   const hs=$('#holdStamp');if(hs)bindHold(hs,()=>doStamp(p));
@@ -289,7 +291,7 @@ function showCallout(p){
   if(SHARE)h+='<span style="color:var(--muted)">👁 只读</span>'+(vis?' · <span style="color:var(--ok)">✓ '+rec.d+'</span>':'');
   else if(tam)h+='<span style="color:var(--bad)">⚠ 签名异常（已改动）</span>';
   else if(vis)h+='<span style="color:var(--ok)">✓ 已点亮 · '+rec.d+'</span><button class="holdbtn danger" id="cRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';
-  else h+='<span style="color:var(--muted)">用手指刮开徽章即可打卡 ✨</span>';
+  else h+='<span style="color:var(--muted)">长按徽章（约半秒）再刮开即可打卡 ✨</span>';
   h+='</div>';c.innerHTML=h;stage.appendChild(c);
   const cw=c.offsetWidth,ch=c.offsetHeight;
   let left=fx+fr.width/2+12,side='r';

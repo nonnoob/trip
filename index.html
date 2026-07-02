@@ -457,10 +457,10 @@ function initTripExtras(t){
 function loadWeather(t){
   const g=GEO[t.id],live=document.getElementById('wxlive');if(!g||!live)return;
   const [la,lo]=g.coord;
-  const url='https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=auto&forecast_days=7';
+  const url='https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=celsius&timezone=auto&forecast_days=7';
   const fill=d=>{try{
-    const c=d.current,[ce,ct]=WMO(c.weather_code),f=Math.round(c.temperature_2m),cc=Math.round((f-32)/1.8);
-    live.innerHTML='<span class="now">'+ce+'</span><div style="flex:1"><div class="tnow">'+f+'°F <small style="font-size:12px;color:var(--muted);font-weight:600">/ '+cc+'°C</small></div><div class="wmeta">'+ct+' · '+esc(t.name)+' 实时</div></div>';
+    const c=d.current,[ce,ct]=WMO(c.weather_code),tc=Math.round(c.temperature_2m);
+    live.innerHTML='<span class="now">'+ce+'</span><div style="flex:1"><div class="tnow">'+tc+'°C</div><div class="wmeta">'+ct+' · '+esc(t.name)+' 实时</div></div>';
     const dy=d.daily;if(dy&&dy.time){let fr='<div class="wxf">';for(let i=0;i<dy.time.length;i++){const de=WMO(dy.weather_code[i])[0],hi=Math.round(dy.temperature_2m_max[i]),lo2=Math.round(dy.temperature_2m_min[i]),wd=['周日','周一','周二','周三','周四','周五','周六'][new Date(dy.time[i]+'T00:00:00').getDay()];fr+='<div class="d"><div class="wd">'+(i===0?'今天':wd)+'</div><div class="we">'+de+'</div><div class="wt">'+hi+'°<small>/'+lo2+'°</small></div></div>';}fr+='</div>';live.insertAdjacentHTML('afterend',fr);}
   }catch(e){}};
   if(WXCACHE[t.id]&&WXCACHE[t.id].daily){fill(WXCACHE[t.id]);return;}
@@ -468,10 +468,10 @@ function loadWeather(t){
 }
 function heroWeather(t){
   const g=GEO[t.id],el=document.getElementById('herowx');if(!g||!el)return;
-  const put=d=>{try{const c=d.current,[e]=WMO(c.weather_code),f=Math.round(c.temperature_2m);el.textContent=' · '+e+' '+f+'°F';}catch(_){}};
+  const put=d=>{try{const c=d.current,[e]=WMO(c.weather_code),f=Math.round(c.temperature_2m);el.textContent=' · '+e+' '+f+'°C';}catch(_){}};
   if(WXCACHE[t.id]){put(WXCACHE[t.id]);return;}
   const [la,lo]=g.coord;
-  fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=auto').then(r=>r.json()).then(put).catch(()=>{});
+  fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=auto').then(r=>r.json()).then(put).catch(()=>{});
 }
 function downloadICS(t){
   const d=t.start.replace(/-/g,'');const end=new Date(new Date(t.start+'T00:00:00').getTime()+t.days*864e5);const ed=end.getFullYear()+String(end.getMonth()+1).padStart(2,'0')+String(end.getDate()).padStart(2,'0');
