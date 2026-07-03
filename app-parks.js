@@ -277,7 +277,7 @@ async function doStamp(p){if(SHARE)return;if(!await ensurePriv())return;await le
 async function doRemove(p){if(SHARE)return;if(!await ensurePriv())return;ledger.remove(p.id);paintNational();renderProgress();closeSheet();toast('已取消打卡');if(MODE==='state'&&p._state)enterState(p._state);}
 
 /* ---------- unlock helpers ---------- */
-async function ensurePriv(){if(ledger.unlocked)return true;if(!ledger.hasIdentity){await openLock();return ledger.unlocked;}const pass=await askPass('输入口令解锁打卡','你设置的打卡口令');if(pass===null)return false;if(await ledger.unlock(pass)){setLockUI();return true;}toast('口令不对');return false;}
+async function ensurePriv(){if(ledger.unlocked)return true;if(!ledger.hasIdentity){await openLock();return ledger.unlocked;}const pass=await askPass('请签名','你的口令');if(pass===null)return false;if(await ledger.unlock(pass)){setLockUI();return true;}toast('口令不对');return false;}
 function stampAnim(){const s=el('div','stamp-anim');s.textContent='VISITED';document.body.appendChild(s);requestAnimationFrame(()=>s.classList.add('go'));setTimeout(()=>s.remove(),1000);}
 
 /* ---------- modal ---------- */
@@ -290,9 +290,9 @@ function setLockUI(){const b=$('#btnLock');if(SHARE){b.textContent='👁';return
 function openLock(){
   return new Promise(resolve=>{
     if(SHARE){openModal('<h3>只读分享卡片</h3><p>你在看一张被加密签名保护的分享卡片，无法打卡或修改。卡片编号 <span class="fp">'+ledger.fp+'</span>。</p><p>想要自己的图鉴？去掉网址里 # 后面的内容重新打开即可。</p><div class="mbtns"><button class="pri" id="ok">好的</button></div>');$('#ok').onclick=()=>{closeModal();resolve();};return;}
-    if(!ledger.hasIdentity){openModal('<h3>设置打卡口令</h3><p>打卡用 <b>ECDSA 数字签名</b> 保护：只有知道口令的人能盖章/刮开，别人改了记录签名就会失效、显示「异常」。口令<b>无法找回</b>，请记牢。</p><input class="inp" type="password" id="p1" placeholder="设置口令"><input class="inp" type="password" id="p2" placeholder="再输一次"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">生成我的印章</button></div>');$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{const a=$('#p1').value,b=$('#p2').value;if(a.length<4)return toast('口令至少 4 位');if(a!==b)return toast('两次不一致');const btn=$('#o');btn.textContent='生成中…';btn.disabled=true;const fp=await ledger.setup(a);closeModal();setLockUI();toast('印章已生成 '+fp);resolve();};return;}
+    if(!ledger.hasIdentity){openModal('<h3>请签名</h3><p>首次使用：设置一个口令作为你的签名，<b>无法找回</b>，请记牢。</p><input class="inp" type="password" id="p1" placeholder="设置口令"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">签名</button></div>');const p1=$('#p1');p1.focus();p1.onkeydown=e=>{if(e.key==='Enter')$('#o').click();};$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{const a=p1.value;if(a.length<4)return toast('口令至少 4 位');const btn=$('#o');btn.textContent='签名中…';btn.disabled=true;const fp=await ledger.setup(a);closeModal();setLockUI();toast('已签名 · 印章 '+fp);resolve();};return;}
     if(ledger.unlocked){openModal('<h3>已解锁 🔓</h3><p>卡片编号 <span class="fp">'+ledger.fp+'</span>，可以打卡。</p><div class="mbtns"><button id="lock">锁定</button><button class="pri" id="ok">完成</button></div>');$('#ok').onclick=()=>{closeModal();resolve();};$('#lock').onclick=()=>{ledger.lock();setLockUI();closeModal();toast('已锁定');resolve();};return;}
-    openModal('<h3>输入口令解锁</h3><input class="inp" type="password" id="pp" placeholder="你的打卡口令"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">解锁</button></div>');$('#pp').focus();$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{if(await ledger.unlock($('#pp').value)){setLockUI();closeModal();toast('已解锁 '+ledger.fp);}else{toast('口令不对');}resolve();};
+    openModal('<h3>请签名</h3><input class="inp" type="password" id="pp" placeholder="你的口令"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">签名</button></div>');$('#pp').focus();$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{if(await ledger.unlock($('#pp').value)){setLockUI();closeModal();toast('已解锁 '+ledger.fp);}else{toast('口令不对');}resolve();};
   });
 }
 $('#btnLock').onclick=()=>openLock();
