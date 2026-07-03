@@ -32,7 +32,8 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .back{border:none;background:none;color:var(--accent-ink);font-size:15px;display:flex;align-items:center;gap:4px;padding:0;cursor:pointer;font-weight:600}
 .wrap{padding:14px 16px 8px}
 .greet{font-size:12.5px;color:var(--muted);margin:0 4px 10px}
-.hero{background:linear-gradient(135deg,var(--accent),#0b5c73);color:#fff;border-radius:20px;padding:18px 18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;cursor:pointer}
+.hero{background:linear-gradient(135deg,var(--accent) 0%,#0b5c73 62%,#094b5e 100%);color:#fff;border-radius:20px;padding:18px 18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;cursor:pointer}
+.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(90% 60% at 12% -10%,rgba(255,255,255,.14),transparent 60%);pointer-events:none}
 .hero .lab{font-size:12px;opacity:.86;letter-spacing:.4px}
 .hero .nm{font-size:19px;font-weight:700;margin:2px 0 8px}
 .hero .big{font-size:34px;font-weight:800;line-height:1;letter-spacing:.5px}
@@ -41,13 +42,15 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .hero .go{margin-top:14px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600}
 .hero .glow{position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)}
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 2px}
-.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:13px 6px 11px;text-align:center;cursor:pointer}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:13px 6px 11px;text-align:center;cursor:pointer;transition:transform .13s ease}
+.tile:active{transform:scale(.96)}
 .tile .ic2{font-size:21px;line-height:1}
 .tile .tl{font-size:12px;font-weight:700;margin-top:6px}
 .tile .ts{font-size:10px;color:var(--muted);margin-top:1px}
 .sec{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin:20px 4px 10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
-.trip{display:flex;align-items:center;gap:13px;padding:14px 15px;cursor:pointer;border-bottom:1px solid var(--line)}
+.trip{display:flex;align-items:center;gap:13px;padding:14px 15px;cursor:pointer;border-bottom:1px solid var(--line);transition:background .15s}
+.trip:active{background:var(--accent-soft)}
 .trip:last-child{border-bottom:none}
 .trip .ic{width:46px;height:46px;border-radius:13px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:24px;flex:0 0 auto}
 .trip .tx{flex:1;min-width:0}
@@ -57,7 +60,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
 .p-ok{background:var(--ok-b);color:var(--ok-i)} .p-plan{background:var(--plan-b);color:var(--plan-i)} .p-idea{background:var(--idea-b);color:var(--idea-i)}
 .prog{height:5px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:7px}
-.prog>i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.prog>i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
 .dhero{padding:4px 4px 0}
 .dtitle{font-size:23px;font-weight:800;margin:2px 0 4px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
@@ -343,7 +346,17 @@ const PACK={id:'pack',emoji:'🧳',name:'通用打包',checklist:[
 const ST={ok:['p-ok','✅'],plan:['p-plan','📅'],idea:['p-idea','💡']};
 const $=s=>document.querySelector(s);
 const view=$('#view'), bar=$('#bar'), barsub=$('#barsub');
-const WXCACHE={};
+/* 天气：localStorage 缓存 30 分钟，首页 hero 与行程页共用同一次请求 */
+const WXTTL=30*60*1000;
+function wxGet(id){try{const o=JSON.parse(localStorage.getItem('trip_wx_'+id));if(o&&Date.now()-o.t<WXTTL)return o.d;}catch(e){}return null;}
+function wxPut(id,d){try{localStorage.setItem('trip_wx_'+id,JSON.stringify({t:Date.now(),d:d}));}catch(e){}}
+function fetchWX(t){
+  const g=GEO[t.id];if(!g)return Promise.reject(new Error('no geo'));
+  const c=wxGet(t.id);if(c)return Promise.resolve(c);
+  const [la,lo]=g.coord;
+  const url='https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=celsius&timezone=auto&forecast_days=7';
+  return fetch(url).then(r=>r.json()).then(d=>{wxPut(t.id,d);return d;});
+}
 const SCROLL={};let curHash=null;
 function daysTo(s){const t=new Date();t.setHours(0,0,0,0);const d=new Date(s+'T00:00:00');return Math.round((d-t)/864e5);}
 function cdText(n){return n>1?['还有',n+' 天']:n===1?['明天出发','✦']:n===0?['今天出发','✦']:['已结束',''];}
@@ -455,23 +468,18 @@ function initTripExtras(t){
   const ib=document.getElementById('icsbtn');if(ib)ib.onclick=()=>downloadICS(t);
 }
 function loadWeather(t){
-  const g=GEO[t.id],live=document.getElementById('wxlive');if(!g||!live)return;
-  const [la,lo]=g.coord;
-  const url='https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=celsius&timezone=auto&forecast_days=7';
+  const live=document.getElementById('wxlive');if(!GEO[t.id]||!live)return;
   const fill=d=>{try{
     const c=d.current,[ce,ct]=WMO(c.weather_code),tc=Math.round(c.temperature_2m);
     live.innerHTML='<span class="now">'+ce+'</span><div style="flex:1"><div class="tnow">'+tc+'°C</div><div class="wmeta">'+ct+' · '+esc(t.name)+' 实时</div></div>';
     const dy=d.daily;if(dy&&dy.time){let fr='<div class="wxf">';for(let i=0;i<dy.time.length;i++){const de=WMO(dy.weather_code[i])[0],hi=Math.round(dy.temperature_2m_max[i]),lo2=Math.round(dy.temperature_2m_min[i]),wd=['周日','周一','周二','周三','周四','周五','周六'][new Date(dy.time[i]+'T00:00:00').getDay()];fr+='<div class="d"><div class="wd">'+(i===0?'今天':wd)+'</div><div class="we">'+de+'</div><div class="wt">'+hi+'°<small>/'+lo2+'°</small></div></div>';}fr+='</div>';live.insertAdjacentHTML('afterend',fr);}
   }catch(e){}};
-  if(WXCACHE[t.id]&&WXCACHE[t.id].daily){fill(WXCACHE[t.id]);return;}
-  fetch(url).then(r=>r.json()).then(d=>{WXCACHE[t.id]=d;fill(d);}).catch(()=>{live.innerHTML='<span class="now">🌦️</span><div><div class="tnow" style="font-size:14px">实时天气暂时加载不出</div><div class="wmeta">看下方季节预期</div></div>';});
+  fetchWX(t).then(fill).catch(()=>{live.innerHTML='<span class="now">🌦️</span><div><div class="tnow" style="font-size:14px">实时天气暂时加载不出</div><div class="wmeta">看下方季节预期</div></div>';});
 }
 function heroWeather(t){
-  const g=GEO[t.id],el=document.getElementById('herowx');if(!g||!el)return;
+  const el=document.getElementById('herowx');if(!GEO[t.id]||!el)return;
   const put=d=>{try{const c=d.current,[e]=WMO(c.weather_code),f=Math.round(c.temperature_2m);el.textContent=' · '+e+' '+f+'°C';}catch(_){}};
-  if(WXCACHE[t.id]){put(WXCACHE[t.id]);return;}
-  const [la,lo]=g.coord;
-  fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=auto').then(r=>r.json()).then(put).catch(()=>{});
+  fetchWX(t).then(put).catch(()=>{});
 }
 function downloadICS(t){
   const d=t.start.replace(/-/g,'');const end=new Date(new Date(t.start+'T00:00:00').getTime()+t.days*864e5);const ed=end.getFullYear()+String(end.getMonth()+1).padStart(2,'0')+String(end.getDate()).padStart(2,'0');
