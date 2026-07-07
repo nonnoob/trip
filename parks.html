@@ -17,7 +17,7 @@ a{color:var(--gold)}
 .wrap{max-width:760px;margin:0 auto;padding:14px}
 header.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;position:sticky;top:0;z-index:30;background:linear-gradient(180deg,rgba(11,31,42,.96),rgba(11,31,42,.7));backdrop-filter:blur(8px)}
 .back{font-size:14px;color:var(--muted);text-decoration:none;font-weight:700;white-space:nowrap;flex:0 0 auto}
-.htitle{font-weight:800;font-size:16px;letter-spacing:.5px;white-space:nowrap;flex:0 0 auto}
+.htitle{font-weight:800;font-size:16px;letter-spacing:.5px;white-space:nowrap;flex:0 0 auto;background:linear-gradient(180deg,#f7e6b8,#e7c06a 78%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .htitle small{display:block;font-weight:600;font-size:11px;color:var(--muted);letter-spacing:2px;white-space:nowrap}
 .spacer{flex:1}
 .iconbtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;transition:transform .12s ease}
@@ -26,7 +26,7 @@ header.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;position:s
 /* progress */
 .prog{margin:6px 14px 2px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
 .prow{display:flex;align-items:baseline;gap:8px}
-.big{font-size:30px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
+.big{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;background:linear-gradient(180deg,#f7e6b8,#e7c06a 72%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .of{font-size:14px;color:var(--muted);font-weight:700}
 .tier{margin-left:auto;font-size:12px;font-weight:800;background:linear-gradient(180deg,var(--gold),var(--gold2));padding:4px 10px;border-radius:999px;color:#3a2a07;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 4px rgba(0,0,0,.25)}
 .track{height:9px;background:#0c2531;border-radius:999px;margin-top:10px;overflow:hidden;border:1px solid var(--line)}
@@ -36,12 +36,8 @@ header.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;position:s
 .sub{display:flex;gap:10px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:var(--muted)}
 .sub b{color:var(--ink)}
 /* map */
-.mapwrap{position:relative;margin:10px 14px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,#0d2734,#0b202c);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.mapwrap{position:relative;margin:10px 14px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,#0d2734,#0b202c);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -34px 60px -34px rgba(0,0,0,.5),0 10px 30px -18px rgba(0,0,0,.6)}
 svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
-.state{fill:#15333f;stroke:#27516240;stroke-width:.6;transition:fill .3s}
-.dot-hit{cursor:pointer}
-.foil{transition:opacity .5s,transform .5s}
-.glow{filter:drop-shadow(0 0 5px rgba(231,192,106,.8))}
 .legend{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;padding:8px 10px 12px;font-size:11px;color:var(--muted)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 .maperr{padding:18px;text-align:center;color:var(--muted);font-size:13px}
@@ -51,7 +47,7 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .chip{flex:0 0 auto;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:12px;color:var(--muted);font-weight:700;cursor:pointer;white-space:nowrap;transition:transform .12s ease,border-color .2s}
 .chip:active{transform:scale(.95)}
 .chip b{color:var(--gold)}
-.chip.on{border-color:var(--gold2);color:var(--ink)}
+.chip.on{border-color:var(--gold2);color:var(--ink);box-shadow:0 0 0 1px rgba(202,162,74,.35),0 2px 10px rgba(231,192,106,.18)}
 /* sheet / detail */
 .scrim{position:fixed;inset:0;background:rgba(3,12,17,.6);backdrop-filter:blur(3px);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
 .scrim.show{opacity:1;pointer-events:auto}
@@ -71,7 +67,7 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .hl{margin-top:8px;font-size:13px;color:var(--muted)}
 .hl b{color:var(--gold)}
 .stampbox{margin-top:16px}
-.holdbtn{position:relative;width:100%;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:900;color:#3a2a07;background:linear-gradient(180deg,var(--gold),var(--gold2));cursor:pointer;overflow:hidden;letter-spacing:1px;user-select:none;touch-action:none}
+.holdbtn{position:relative;width:100%;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:900;color:#3a2a07;background:linear-gradient(180deg,var(--gold),var(--gold2));cursor:pointer;overflow:hidden;letter-spacing:1px;user-select:none;touch-action:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 18px -8px rgba(231,192,106,.5)}
 .holdbtn .lab{position:relative;z-index:2}
 .holdbtn .prog2{position:absolute;inset:0;background:rgba(255,255,255,.35);width:0;z-index:1}
 .holdbtn.danger{background:linear-gradient(180deg,#2a4350,#1d3340);color:var(--ink);border:1px solid var(--line)}
@@ -106,9 +102,7 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .state.lit{fill:#3a4a3f}
 .state.done{fill:#4a5a3c}
 .state:hover{fill:#3d525f}
-.slabel{pointer-events:none}
 .ab{fill:#aac7ce;font-size:12px;font-weight:800;text-anchor:middle;paint-order:stroke;stroke:#0b1f2a;stroke-width:2.5px;pointer-events:none}
-.slabel .m{font-size:11px;text-anchor:middle;filter:grayscale(.5) opacity(.85)}
 .pmark{font-size:15px;text-anchor:middle;cursor:pointer;filter:grayscale(1) opacity(.6);transition:filter .5s}
 .pmark.lit{filter:grayscale(0) opacity(1) drop-shadow(0 0 5px rgba(231,192,106,.95))}
 .hintbar{ text-align:center;color:#6f99a4;font-size:12px;margin:2px 14px 0}
@@ -122,7 +116,7 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .sv-title small{display:block;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.5px}
 .sv-sub{margin-left:auto;text-align:right;font-size:12px;color:var(--muted)}
 .sv-sub b{color:var(--gold);font-size:18px}
-.sv-stage{position:relative;margin:8px 14px;border:1px solid var(--line);border-radius:18px;background:radial-gradient(120% 100% at 50% 0%,#123040,#0c2230);overflow:hidden;min-height:300px}
+.sv-stage{position:relative;margin:8px 14px;border:1px solid var(--line);border-radius:18px;background:radial-gradient(120% 100% at 50% 0%,#123040,#0c2230);overflow:hidden;min-height:300px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -34px 60px -34px rgba(0,0,0,.5),0 10px 30px -18px rgba(0,0,0,.6)}
 .sv-bg{display:block;width:100%;height:auto}
 .sv-bg path{fill:#16323f;stroke:#2c5566;stroke-width:1}
 .sv-emptly{padding:46px 18px;text-align:center;color:var(--muted)}
@@ -136,12 +130,6 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .med-ring{position:absolute;inset:0;border-radius:50%;border:2px dashed rgba(159,176,184,.5);pointer-events:none}
 .med-ring.done{border:2px solid var(--gold);box-shadow:0 0 10px rgba(231,192,106,.6)}
 .med-canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;cursor:grab;touch-action:pinch-zoom}
-.med-name{margin-top:5px;font-size:12px;font-weight:800;color:var(--ink);line-height:1.15;text-shadow:0 1px 3px #07151d,0 0 3px #07151d,0 0 5px #07151d;position:relative;z-index:5}
-.med-name span{display:block;font-size:10px;color:var(--muted);font-weight:600}
-.med-date{font-size:10px;color:var(--ok);font-weight:700;margin-top:1px}
-.med-lock{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(8,20,28,.5);z-index:3}
-.med-info{position:absolute;top:-4px;right:6px;width:20px;height:20px;border-radius:50%;background:#0d2531;border:1px solid var(--line);color:var(--muted);font-size:12px;line-height:18px;text-align:center;cursor:pointer;z-index:4}
-.scratch-tip{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:11px;color:#6f99a4;pointer-events:none}
 /* boundary-shaped figures */
 .park-fig{position:absolute;transform:translate(-50%,-50%);text-align:center;touch-action:pinch-zoom}
 .fig-disc{position:relative;margin:0 auto}
@@ -327,6 +315,7 @@ window.PARKS=PARKS;window.REGIONS=REGIONS;window.TIERS=TIERS;
 </script>
 <script src="park-bounds.js?v=1"></script>
 <script src="ledger.js?v=1"></script>
-<script src="app-parks.js?v=24"></script>
+<script src="scratchable.js?v=1"></script>
+<script src="app-parks.js?v=25"></script>
 </body>
 </html>

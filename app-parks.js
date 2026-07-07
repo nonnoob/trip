@@ -18,8 +18,7 @@ const visitedCount=()=>PARKS.reduce((n,p)=>n+(isVisited(p.id)?1:0),0);
 
 /* ---------- park <-> state ---------- */
 const ABBR2NAME={},NAME2STATE={};STATES.forEach(s=>{ABBR2NAME[s.ab]=s.name;NAME2STATE[s.name]=s;});
-const USGS_OVR={hawaii:'Volcanoes National Park',haleakala:'Haleakala National Park',wrangell:'Wrangell',samoa:'American Samoa',virginislands:'Virgin Islands National Park'};
-PARKS.forEach(p=>{p._terr=(p.id==='virginislands'||p.id==='samoa');let ab=PSF[p.id];if(!ab){const m=p.st.match(/([A-Z]{2})\s*$/);ab=m?m[1]:null;}p._ab=ab;p._state=ab?ABBR2NAME[ab]:null;p._usgs=USGS_OVR[p.id]||(p.en+' National Park');});
+PARKS.forEach(p=>{p._terr=(p.id==='virginislands'||p.id==='samoa');let ab=PSF[p.id];if(!ab){const m=p.st.match(/([A-Z]{2})\s*$/);ab=m?m[1]:null;}p._state=ab?ABBR2NAME[ab]:null;});
 const parksInState=name=>PARKS.filter(p=>p._state===name);
 
 /* ---------- progress / tiers / regions ---------- */
@@ -129,40 +128,17 @@ function relax(pts,hmin,vmin,ins,cen,proj,feat){
   }
 }
 
-/* ---------- scratch core (clipped, sound, haptics) ---------- */
-function countFoil(ctx,cv){const im=ctx.getImageData(0,0,cv.width,cv.height).data;let c=0;const step=Math.max(2,Math.floor(cv.width/18));for(let y=0;y<cv.height;y+=step)for(let x=0;x<cv.width;x+=step){if(im[(y*cv.width+x)*4+3]>=128)c++;}return c;}
-function circlePath(size){const r=size/2-1,c=size/2;return 'M '+c+' '+(c-r)+' a '+r+' '+r+' 0 1 0 0 '+(2*r)+' a '+r+' '+r+' 0 1 0 0 '+(-2*r)+' Z';}
-/* global active-touch tracker: a 2nd finger anywhere (even on another figure) = pinch, never scratch */
-const GPTRS=new Set();
-document.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')GPTRS.add(e.pointerId);},true);
-const _gpUp=e=>{GPTRS.delete(e.pointerId);};
-document.addEventListener('pointerup',_gpUp,true);document.addEventListener('pointercancel',_gpUp,true);
-function multiTouch(){return GPTRS.size>1;}
+/* ---------- scratch core（手势/涂层/多指防误刮在 scratchable.js，这里只接业务） ---------- */
 function initScratch(cv,grayEl,clipD,p,finalize){
-  setTimeout(()=>{
-    const dpr=Math.min(2,window.devicePixelRatio||1);const rect=cv.getBoundingClientRect();const size=Math.round(rect.width)||90;
-    cv.width=size*dpr;cv.height=size*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
-    let clip=null;try{if(clipD)clip=new Path2D(clipD);}catch(e){}
-    const grad=ctx.createLinearGradient(0,0,size,size);grad.addColorStop(0,'#d6e0e4');grad.addColorStop(.5,'#9fb0b8');grad.addColorStop(1,'#6c7f88');
-    const paintFoil=()=>{ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='source-over';ctx.fillStyle=grad;ctx.fillRect(0,0,size,size);ctx.fillStyle='rgba(255,255,255,.18)';for(let i=0;i<24;i++)ctx.fillRect(Math.random()*size,Math.random()*size,2,2);ctx.restore();};
-    const startErase=()=>{ctx.save();if(clip)ctx.clip(clip);ctx.globalCompositeOperation='destination-out';ctx.globalAlpha=0.26;ctx.lineCap='round';ctx.lineJoin='round';};
-    paintFoil();const total=Math.max(1,countFoil(ctx,cv));startErase();
-    let last=null,done=false,lastSfx=0,travel=0,armed=false,armT=null,downL=null,moved=false;const TH=1,TAP=size*0.25,ARM_MS=350,MOVECANCEL=8;
-    const toLocal=e=>{const b=cv.getBoundingClientRect();return {x:(e.clientX-b.left)*size/b.width,y:(e.clientY-b.top)*size/b.height};};
-    const erase=(x,y)=>{ctx.beginPath();ctx.arc(x,y,size*0.11,0,7);ctx.fill();if(last){travel+=Math.hypot(x-last.x,y-last.y);ctx.lineWidth=size*0.2;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(x,y);ctx.stroke();}last={x,y};};
-    const recover=()=>{ctx.restore();paintFoil();startErase();done=false;armed=false;cv.classList.remove('armed');last=null;travel=0;grayEl.style.filter='grayscale(1) brightness(.8)';};
-    const reveal=()=>{ctx.restore();ctx.clearRect(0,0,size,size);grayEl.style.filter='none';cv.style.transition='opacity .35s';cv.style.opacity='0';setTimeout(()=>{cv.remove();},360);sfxDing();buzz([28,40,80]);finalize();};
-    const commit=async()=>{if(!SHARE){const ok=await ensurePriv();if(!ok){recover();return;}}reveal();};
-    const setArmed=(v)=>{armed=v;if(v){cv.classList.add('armed');buzz(18);}else{cv.classList.remove('armed');}};
-    const clearArm=()=>{if(armT){clearTimeout(armT);armT=null;}};
-    const onDown=e=>{if(done||SHARE)return;if(multiTouch())return;ensureAudio();downL=toLocal(e);last=downL;travel=0;moved=false;setArmed(false);try{cv.setPointerCapture(e.pointerId);}catch(_){}clearArm();armT=setTimeout(()=>{armT=null;if(!moved&&!done)setArmed(true);},ARM_MS);};
-    /* 采样节流：getImageData 全画布读回很贵，跟 sfx 共用 70ms 节拍；抬指再补一次终判 */
-    const checkDone=()=>{if(done)return;const left=countFoil(ctx,cv);const f=1-left/total;const k=Math.min(1,f/TH);grayEl.style.filter='grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';if(f>=TH||left<=1){done=true;setArmed(false);commit();}};
-    const onMove=e=>{if(done)return;if(multiTouch()){clearArm();setArmed(false);try{cv.releasePointerCapture(e.pointerId);}catch(_){}return;}const l=toLocal(e);if(!armed){if(downL&&Math.hypot(l.x-downL.x,l.y-downL.y)>MOVECANCEL){moved=true;clearArm();}last=l;return;}e.preventDefault();erase(l.x,l.y);const now=performance.now();if(now-lastSfx>70){lastSfx=now;sfxScratch();buzz(6);checkDone();}};
-    const onUp=()=>{clearArm();if(armed&&travel>0)checkDone();const tap=!done&&!armed&&!moved&&travel<TAP&&!multiTouch();setArmed(false);last=null;if(tap)showCallout(p);};
-    const onCancel=()=>{clearArm();setArmed(false);last=null;};
-    cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);cv.addEventListener('pointerup',onUp);cv.addEventListener('pointerleave',onCancel);cv.addEventListener('pointercancel',onCancel);
-  },20);
+  Scratchable.attach(cv,{
+    clip:clipD,
+    disabled:()=>SHARE,
+    confirm:ensurePriv,
+    onProgress:k=>{grayEl.style.filter=k>=1?'none':'grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';},
+    onReveal:finalize,
+    onTap:()=>showCallout(p),
+    fx:{ensureAudio,scratch:sfxScratch,ding:sfxDing,buzz}
+  });
 }
 /* ---------- park figure (real boundary shape) ---------- */
 function fcShape(fc,FIG){
@@ -198,7 +174,7 @@ function makeMedallion(p,x,y,small){
   const base=el('div','med-base'+(vis?' color':''));base.style.fontSize=small?'30px':'42px';base.textContent=p.em;
   const ring=el('div','med-ring'+(vis||tam?' done':''));if(tam)ring.style.borderColor='var(--bad)';
   disc.appendChild(base);disc.appendChild(ring);disc.style.cursor='pointer';
-  if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,circlePath(SZ),p,()=>{ring.classList.add('done');finishCheck(p);});}
+  if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,Scratchable.circlePath(SZ),p,()=>{ring.classList.add('done');finishCheck(p);});}
   else{disc.onclick=()=>showCallout(p);}
   m.appendChild(disc);
   return m;
