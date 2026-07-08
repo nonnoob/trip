@@ -366,7 +366,7 @@ function fetchWX(t){
 }
 const SCROLL={};let curHash=null;
 function daysTo(s){const t=new Date();t.setHours(0,0,0,0);const d=new Date(s+'T00:00:00');return Math.round((d-t)/864e5);}
-function cdText(n){return n>1?[n+' 天','后出发']:n===1?['明天出发','✦']:n===0?['今天出发','✦']:['已结束',''];}
+function cdText(n){return n>1?[n+' 天','后出发']:n===1?['明天出发','✦']:n===0?['今天出发','✦']:['已完成',''];}
 function isPast(t){return daysTo(t.start)+t.days-1<0;}
 let CHK={};try{CHK=JSON.parse(localStorage.getItem('trip_checks')||'{}')}catch(e){}
 function saveChk(){try{localStorage.setItem('trip_checks',JSON.stringify(CHK))}catch(e){}}
