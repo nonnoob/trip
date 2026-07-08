@@ -86,6 +86,8 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .day .dh .dn{font-size:15px;font-weight:800}
 .day .dh .dd{font-size:12.5px;color:var(--muted)}
 .lmap{height:180px;border-radius:13px;overflow:hidden;border:1px solid var(--line);margin:9px 0 7px;position:relative;z-index:0}
+.lmap.off{height:auto;border-style:dashed}
+.lmap-offmsg{padding:12px;text-align:center;font-size:12.5px;color:var(--muted)}
 .navlink{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--accent-ink);font-weight:700;text-decoration:none;margin:0 0 10px}
 .lnum{background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
 .tl{position:relative;padding-left:4px}
@@ -348,16 +350,21 @@ const PACK={id:'pack',emoji:'🧳',name:'通用打包',checklist:[
 const ST={ok:['p-ok','✅'],plan:['p-plan','📅'],idea:['p-idea','💡']};
 const $=s=>document.querySelector(s);
 const view=$('#view'), bar=$('#bar'), barsub=$('#barsub');
-/* 天气：localStorage 缓存 30 分钟，首页 hero 与行程页共用同一次请求 */
+/* 天气：localStorage 永久保留上次成功数据（永不空白，ADR-0009），30 分钟内直接用，过期才请求；请求 8 秒超时，失败回落旧数据并标注数据时间 */
 const WXTTL=30*60*1000;
-function wxGet(id){try{const o=JSON.parse(localStorage.getItem('trip_wx_'+id));if(o&&Date.now()-o.t<WXTTL)return o.d;}catch(e){}return null;}
+function wxRaw(id){try{return JSON.parse(localStorage.getItem('trip_wx_'+id));}catch(e){}return null;}
 function wxPut(id,d){try{localStorage.setItem('trip_wx_'+id,JSON.stringify({t:Date.now(),d:d}));}catch(e){}}
+function wxAge(ms){const m=Math.round(ms/60000);return m<60?m+' 分钟前':m<1440?Math.round(m/60)+' 小时前':Math.round(m/1440)+' 天前';}
 function fetchWX(t){
   const g=GEO[t.id];if(!g)return Promise.reject(new Error('no geo'));
-  const c=wxGet(t.id);if(c)return Promise.resolve(c);
+  const o=wxRaw(t.id);
+  if(o&&Date.now()-o.t<WXTTL){o.d._wxT=o.t;return Promise.resolve(o.d);}
   const [la,lo]=g.coord;
   const url='https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=celsius&timezone=auto&forecast_days=7';
-  return fetch(url).then(r=>r.json()).then(d=>{wxPut(t.id,d);return d;});
+  const ac=window.AbortController?new AbortController():null;
+  if(ac)setTimeout(()=>ac.abort(),8000);
+  return fetch(url,ac?{signal:ac.signal}:{}).then(r=>r.json()).then(d=>{wxPut(t.id,d);d._wxT=Date.now();return d;})
+    .catch(e=>{if(o){o.d._wxT=o.t;return o.d;}throw e;});
 }
 const SCROLL={};let curHash=null;
 function daysTo(s){const t=new Date();t.setHours(0,0,0,0);const d=new Date(s+'T00:00:00');return Math.round((d-t)/864e5);}
@@ -464,7 +471,8 @@ function loadWeather(t){
   const live=document.getElementById('wxlive');if(!GEO[t.id]||!live)return;
   const fill=d=>{try{
     const c=d.current,[ce,ct]=WMO(c.weather_code),tc=Math.round(c.temperature_2m);
-    live.innerHTML='<span class="now">'+ce+'</span><div style="flex:1"><div class="tnow">'+tc+'°C</div><div class="wmeta">'+ct+' · '+esc(t.name)+' 实时</div></div>';
+    const stale=d._wxT&&Date.now()-d._wxT>WXTTL;
+    live.innerHTML='<span class="now">'+ce+'</span><div style="flex:1"><div class="tnow">'+tc+'°C</div><div class="wmeta">'+ct+' · '+esc(t.name)+(stale?' · '+wxAge(Date.now()-d._wxT)+'的数据':' 实时')+'</div></div>';
     const dy=d.daily;if(dy&&dy.time){let fr='<div class="wxf">';for(let i=0;i<dy.time.length;i++){const de=WMO(dy.weather_code[i])[0],hi=Math.round(dy.temperature_2m_max[i]),lo2=Math.round(dy.temperature_2m_min[i]),wd=['周日','周一','周二','周三','周四','周五','周六'][new Date(dy.time[i]+'T00:00:00').getDay()];fr+='<div class="d"><div class="wd">'+(i===0?'今天':wd)+'</div><div class="we">'+de+'</div><div class="wt">'+hi+'°<small>/'+lo2+'°</small></div></div>';}fr+='</div>';live.insertAdjacentHTML('afterend',fr);}
   }catch(e){}};
   fetchWX(t).then(fill).catch(()=>{live.innerHTML='<span class="now">🌦️</span><div><div class="tnow" style="font-size:14px">实时天气暂时加载不出</div><div class="wmeta">看下方季节预期</div></div>';});
@@ -502,7 +510,10 @@ function renderDay(tid,di){
 }
 function initDayExtras(t,di){
   const geo=GEO[t.id],pts=geo&&geo.days&&geo.days[di],el=document.getElementById('map_'+t.id+'_'+di);
-  if(pts&&pts.length&&el&&window.L){try{const m=L.map(el,{scrollWheelZoom:false});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(m);const ll=pts.map(p=>[p[0],p[1]]);pts.forEach((p,k)=>L.marker([p[0],p[1]],{icon:L.divIcon({className:'',html:'<div class="lnum">'+(k+1)+'</div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(m).bindPopup((k+1)+'. '+p[2]));if(ll.length>1){L.polyline(ll,{color:'#0e7490',weight:3,opacity:.85}).addTo(m);m.fitBounds(ll,{padding:[30,30]});}else{m.setView(ll[0],13);}setTimeout(()=>m.invalidateSize(),80);}catch(e){}}
+  /* 地图弱网降级（ADR-0009）：瓦片 4 秒没到就整块收起；断网标志为假时直接不建图。停靠点文字与导航按钮在下方保底 */
+  const mapOff=()=>{if(el){el.classList.add('off');el.innerHTML='<div class="lmap-offmsg">📡 网络不佳 · 地图已收起</div>';}};
+  if(pts&&pts.length&&el&&window.L&&navigator.onLine!==false){try{const m=L.map(el,{scrollWheelZoom:false});let tileOK=false;const tl=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'});tl.on('tileload',()=>{tileOK=true;});tl.addTo(m);setTimeout(()=>{if(!tileOK){try{m.remove();}catch(_){}mapOff();}},4000);const ll=pts.map(p=>[p[0],p[1]]);pts.forEach((p,k)=>L.marker([p[0],p[1]],{icon:L.divIcon({className:'',html:'<div class="lnum">'+(k+1)+'</div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(m).bindPopup((k+1)+'. '+p[2]));if(ll.length>1){L.polyline(ll,{color:'#0e7490',weight:3,opacity:.85}).addTo(m);m.fitBounds(ll,{padding:[30,30]});}else{m.setView(ll[0],13);}setTimeout(()=>m.invalidateSize(),80);}catch(e){mapOff();}}
+  else if(pts&&pts.length&&el)mapOff();
   const btn=document.getElementById('etabtn');if(btn)btn.onclick=()=>computeETAs(t,di,btn);
 }
 function computeETAs(t,di,btn){
@@ -514,11 +525,13 @@ function computeETAs(t,di,btn){
   navigator.geolocation.getCurrentPosition(function(pos){
     const la=pos.coords.latitude,lo=pos.coords.longitude;
     const coords=[lo+','+la].concat(list.map(x=>x.c[1]+','+x.c[0])).join(';');
-    fetch('https://router.project-osrm.org/table/v1/driving/'+coords+'?sources=0&annotations=duration,distance').then(r=>r.json()).then(function(dat){
+    const ac=window.AbortController?new AbortController():null;
+    if(ac)setTimeout(()=>ac.abort(),5000);
+    fetch('https://router.project-osrm.org/table/v1/driving/'+coords+'?sources=0&annotations=duration,distance',ac?{signal:ac.signal}:{}).then(r=>r.json()).then(function(dat){
       const dur=dat.durations&&dat.durations[0],dis=dat.distances&&dat.distances[0];
       list.forEach(function(x,k){const el=document.getElementById('eta_'+di+'_'+x.ii);if(!el)return;const sec=dur&&dur[k+1],met=dis&&dis[k+1];if(sec==null){el.textContent='';return;}const drive=Math.round(sec/60);let line='🚗 '+drive+'分';if(met!=null&&drive<=40){const walk=Math.round(met/80),tran=Math.round(drive*1.5)+6;line='🚶 '+walk+'分 · '+line+' · 🚌 '+tran+'分';}el.innerHTML='　'+line;});
       btn.textContent='✅ 已按当前位置估算（驾车实时路网 · 步行/公交为估算，准确以导航为准）';btn.disabled=false;
-    }).catch(function(){btn.textContent='⚠️ 算不出来，点上面的导航按钮看实时';btn.disabled=false;});
+    }).catch(function(){btn.textContent='⚠️ 网络不佳，算不出来——点各段导航按钮看实时';btn.disabled=false;});
   },function(){btn.textContent='⚠️ 未取得定位，点导航按钮也能从当前位置出发';btn.disabled=false;},{enableHighAccuracy:false,timeout:8000,maximumAge:60000});
 }
 function renderPrep(tid){
@@ -601,6 +614,7 @@ function route(){const h=location.hash||'#/';
   const isDetail=h.startsWith('#/s/')||h.startsWith('#/r/');const y=isDetail?0:(SCROLL[h]||0);curHash=h;requestAnimationFrame(function(){requestAnimationFrame(function(){window.scrollTo(0,y);});});}
 window.addEventListener('hashchange',route);route();
 try{const mf={name:'我们的旅行',short_name:'我们的旅行',start_url:'.',display:'standalone',background_color:'#f4f5f3',theme_color:'#0e7490',icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" rx="96" fill="#0e7490"/><text x="50%" y="54%" font-size="300" text-anchor="middle" dominant-baseline="middle">🧳</text></svg>'),sizes:'512x512',type:'image/svg+xml'}]};const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));document.head.appendChild(l);}catch(e){}
+if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
