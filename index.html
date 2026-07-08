@@ -62,7 +62,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .p-ok{background:var(--ok-b);color:var(--ok-i)} .p-plan{background:var(--plan-b);color:var(--plan-i)} .p-idea{background:var(--idea-b);color:var(--idea-i)} .p-done{background:var(--line);color:var(--muted)}
 .prog{height:5px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:7px}
 .prog>i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
-.dhero{padding:4px 4px 0}
+.dhero{padding:2px 0 0}
 .dtitle{font-size:23px;font-weight:800;margin:2px 0 4px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;color:var(--ink);box-shadow:var(--shadow)}
@@ -375,7 +375,7 @@ function esc(s){return(s+'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 function gi(s){const i=s.indexOf('：');return i>0?('<b>'+esc(s.slice(0,i+1))+'</b>'+esc(s.slice(i+1))):esc(s);}
 function chkHTML(o){return o.checklist.map(c=>{const on=CHK[o.id+'::'+c[0]];return `<div class="chk ${on?'on':''}" data-k="${o.id}::${c[0]}"><div class="box">${on?'✓':''}</div><div class="ctx">${esc(c[1])}${c[2]?`<small>${esc(c[2])}</small>`:''}</div></div>`;}).join('');}
 function bindChk(re){view.querySelectorAll('.chk').forEach(el=>el.onclick=()=>{CHK[el.dataset.k]=!CHK[el.dataset.k];saveChk();re();});}
-function bindGo(){view.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>{const g=el.dataset.go;if(g==='__docs__')window.open(FOLDER,'_blank');else location.hash=g;});}
+function bindGo(){view.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>{const g=el.dataset.go;if(g==='__docs__')window.open(FOLDER,'_blank');else{if(!el.hasAttribute('data-keep'))delete SCROLL[g];location.hash=g;}});}
 function WMO(c){const m={0:['☀️','晴'],1:['🌤️','晴间多云'],2:['⛅','多云'],3:['☁️','阴'],45:['🌫️','雾'],48:['🌫️','雾凇'],51:['🌦️','小毛雨'],53:['🌦️','毛毛雨'],55:['🌦️','浓毛雨'],56:['🌧️','冻毛雨'],57:['🌧️','冻毛雨'],61:['🌧️','小雨'],63:['🌧️','中雨'],65:['🌧️','大雨'],66:['🌧️','冻雨'],67:['🌧️','冻雨'],71:['🌨️','小雪'],73:['🌨️','中雪'],75:['🌨️','大雪'],77:['🌨️','米雪'],80:['🌦️','阵雨'],81:['🌦️','阵雨'],82:['🌧️','强阵雨'],85:['🌨️','阵雪'],86:['🌨️','强阵雪'],95:['⛈️','雷雨'],96:['⛈️','雷雨冰雹'],99:['⛈️','强雷雨']};return m[c]||['🌡️','—'];}
 
 function renderHome(){
@@ -395,9 +395,7 @@ function renderHome(){
     <span class="go">查看行程 →</span></div>`;
   h+=`<div class="tiles">
     <div class="tile" data-go="#/overview"><div class="ic2">🗓️</div><div class="tl">排期 & 季节</div><div class="ts">为什么这么排</div></div>
-    <div class="tile" data-go="#/guide"><div class="ic2">🧭</div><div class="tl">通用攻略</div><div class="ts">订票订房打包</div></div>
     <a class="tile" href="parks.html" style="text-decoration:none"><div class="ic2">🏞️</div><div class="tl">公园打卡</div><div class="ts">63 座·刮刮卡</div></a>
-    <div class="tile" data-go="__docs__"><div class="ic2">📄</div><div class="tl">全部文档</div><div class="ts">Google Drive</div></div>
   </div>`;
   h+='<div class="sec">全部行程</div><div class="card">';
   list.forEach(t=>{const past=isPast(t);const st=past?['p-done','✔']:ST[t.status];const p=prog(t);
@@ -420,7 +418,8 @@ function renderTrip(id){
     <span class="pill ${st[0]}">${st[1]} ${past?'已完成':esc(t.statusText)}</span>`;
   const n=daysTo(t.start),cnt=past?'':n>1?' · 还有 '+n+' 天':n===1?' · 明天出发':n===0?' · 今天出发':' · 进行中';
   h+='<div class="chips">'+`<a class="chip datechip" href="${gcalURL(t)}" target="_blank" rel="noopener">📅 <b>${fmt(t.start)} · ${t.days} 天${cnt}</b></a>`+(t.chips||[['',t.transport]]).filter(c=>c[0]!=='📅'&&c[0]!=='🧭').map(c=>`<span class="chip">${c[0]} <b>${esc(c[1])}</b></span>`).join('')+'</div>';
-  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 完整攻略 · Google 文档</a></div>`;
+  h+='</div>';
+  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 完整攻略</a>`;
   h+=`<div class="docbtn" data-go="#/p/${t.id}" style="margin-top:6px">🧳 出发前准备 ›</div>`;
   h+=`<div class="block" id="wxmount"><div class="wx" id="wxlive"><span class="now">🌡️</span><div style="flex:1"><div class="tnow" style="font-size:15px">实时天气加载中…</div><div class="wmeta">${esc(t.name)} ${esc(t.en)}</div></div></div>${t.weather?`<div class="note" style="margin-top:10px">🌦️ 季节预期：${esc(t.weather)}</div>`:''}</div>`;
   if(t.itinerary){h+='<div class="block"><h3>🗺️ 逐日安排</h3><div class="card">';
@@ -452,7 +451,7 @@ function renderStop(tid,di,ii){
     h+=`<div class="block"><div class="prose">${esc(det.intro)}</div></div>`;
     if(det.traps&&det.traps.length)h+='<div class="block"><h3>⚠️ 避坑指南</h3><ul class="tips">'+det.traps.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul></div>';
   }else{h+='<div class="block"><div class="note">这个点暂时还没有详细介绍。</div></div>';}
-  h+=`<div class="docbtn" data-go="#/d/${t.id}/${di}">← 返回 ${esc(day.n)} 行程</div>`;
+  h+=`<div class="docbtn" data-keep data-go="#/d/${t.id}/${di}">← 返回 ${esc(day.n)} 行程</div>`;
   h+='</div>';view.innerHTML=h;bindGo();
 }
 function initTripExtras(t){
@@ -495,7 +494,7 @@ function renderDay(tid,di){
     dmeals.filter(m=>m.after===ii).forEach(m=>{const fl=(FX[t.id]&&FX[t.id].food)||[];const pl=(m.picks||[]).map(p=>{const fi=fl.findIndex(x=>x.n===p);return fi>=0?`<a class="pick" data-go="#/r/${t.id}/${fi}">${esc(p)} ›</a>`:esc(p);}).join('、');tl+=`<div class="it meal"><div class="tm">${esc(m.t||'')}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct"><div class="h">🍴 ${esc(m.k||'用餐')}<span class="opt">可选</span></div><div class="n">${esc(m.near||'')}${m.picks&&m.picks.length?'　附近：'+pl:''}</div></div></div>`;});
   });
   tl+='</div>';h+=tl;
-  h+=`<div class="docbtn" data-go="#/t/${t.id}">← 返回 ${esc(t.name)} 行程</div>`;
+  h+=`<div class="docbtn" data-keep data-go="#/t/${t.id}">← 返回 ${esc(t.name)} 行程</div>`;
   h+='</div>';view.innerHTML=h;bindGo();initDayExtras(t,di);
 }
 function initDayExtras(t,di){
@@ -540,8 +539,8 @@ function renderPrep(tid){
   if(p&&p.booking)h+=p.booking.map(b=>`<div class="gcard" style="margin-bottom:10px"><div style="font-weight:700;font-size:14px;padding:8px 1px 5px">${esc(b.t)}</div>`+b.steps.map((s,i)=>`<div class="gli">${i+1}. ${gi(s)}</div>`).join('')+'</div>').join('');
   else h+='<div class="gcard"><div class="gli">机票/酒店/租车的通用分步见「🧭 攻略」页；本趟具体（在哪订、怎么订）我可按你的选择补成分步教程。</div></div>';
   h+='</div>';
-  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 完整攻略 · Google 文档</a>`;
-  h+=`<div class="docbtn" data-go="#/t/${t.id}">← 返回 ${esc(t.name)} 行程</div>`;
+  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 完整攻略</a>`;
+  h+=`<div class="docbtn" data-keep data-go="#/t/${t.id}">← 返回 ${esc(t.name)} 行程</div>`;
   h+='</div>';view.innerHTML=h;bindGo();
 }
 function renderResto(tid,idx){
@@ -558,14 +557,14 @@ function renderResto(tid,idx){
   if(f.intro)h+=`<div class="block"><div class="prose">${esc(f.intro)}</div></div>`;
   if(f.dishes&&f.dishes.length)h+='<div class="block"><h3>🍴 推荐菜</h3><div class="fdish" style="padding:2px">'+f.dishes.map(d=>`<span>${esc(d)}</span>`).join('')+'</div></div>';
   h+=`<a class="docbtn" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">📍 在 Google 地图上找这家</a>`;
-  h+=`<div class="docbtn" data-go="#/t/${t.id}">← 返回 ${esc(t.name)} 行程</div>`;
+  h+=`<div class="docbtn" data-keep data-go="#/t/${t.id}">← 返回 ${esc(t.name)} 行程</div>`;
   h+='</div>';view.innerHTML=h;bindGo();
 }
 function renderOverview(){
   setTabs('#/');bar.querySelector('h1').textContent='排期 & 季节';barsub.textContent='';showBack(true);
   let h='<div class="wrap fade"><div class="dhero"><div style="font-size:28px">🗺️</div><div class="dtitle">排期 & 季节逻辑</div></div>';
   h+=`<div class="note" style="margin-top:8px">${esc(OVERVIEW.principle)}</div>`;
-  h+=`<a class="docbtn" href="${OVERVIEW.doc}" target="_blank" rel="noopener" style="margin-top:12px">📄 打开完整总览（Google 文档）</a>`;
+  h+=`<a class="docbtn" href="${OVERVIEW.doc}" target="_blank" rel="noopener" style="margin-top:12px">📄 完整总览</a>`;
   h+='<div class="block"><h3>🌦️ 为什么排在那个月</h3><div class="gcard">'+OVERVIEW.season.map(s=>`<div class="gli"><b>${esc(s[0])}</b><br>${esc(s[1])}</div>`).join('')+'</div></div>';
   h+='<div class="block"><h3>⏰ 预订时间线</h3><div class="gcard">'+OVERVIEW.booking.map(s=>`<div class="gli"><b>${esc(s[0])}</b><br>${esc(s[1])}</div>`).join('')+'</div></div>';
   h+='<div class="block"><h3>🚗 怎么去（自驾 vs 飞）</h3><div class="gcard">'+OVERVIEW.drive.map(s=>`<div class="mini"><span class="k">${esc(s[0])}</span><span class="v">${esc(s[1])}</span></div>`).join('')+'</div></div>';
@@ -575,7 +574,7 @@ function renderOverview(){
 function renderGuide(){
   setTabs('#/guide');bar.querySelector('h1').textContent='通用攻略';barsub.textContent='';showBack(false);
   let h='<div class="wrap fade"><div class="dhero"><div style="font-size:28px">🧭</div><div class="dtitle">通用攻略</div><div style="color:var(--muted);font-size:13px;margin-top:2px">订机票 / 订房 / 租车 / 年票 / 打包 / 避坑 —— 所有行程通用</div></div>';
-  h+=`<a class="docbtn" href="${GUIDE.doc}" target="_blank" rel="noopener" style="margin-top:12px">📄 打开完整通用攻略（Google 文档）</a>`;
+  h+=`<a class="docbtn" href="${GUIDE.doc}" target="_blank" rel="noopener" style="margin-top:12px">📄 完整通用攻略</a>`;
   GUIDE.sections.forEach(sec=>{h+=`<div class="block"><h3>${sec.t}</h3><div class="gcard">`+sec.items.map(x=>`<div class="gli">${gi(x)}</div>`).join('')+'</div></div>';});
   const p=prog(PACK);
   h+=`<div class="block"><h3>🧳 通用打包清单 <span style="color:var(--muted);font-weight:600;font-size:13px">${p.done}/${p.total}</span></h3><div class="card" style="padding:4px 15px">`+chkHTML(PACK)+'</div></div>';
@@ -601,7 +600,7 @@ function route(){const h=location.hash||'#/';
   else if(h.startsWith('#/d/')){const p=h.slice(4).split('/');renderDay(p[0],+p[1]);}
   else if(h.startsWith('#/p/'))renderPrep(h.slice(4));else if(h.startsWith('#/t/'))renderTrip(h.slice(4));
   else if(h==='#/guide')renderGuide();else if(h==='#/overview')renderOverview();else if(h==='#/lists')renderLists();else renderHome();
-  const isDetail=h.startsWith('#/s/')||h.startsWith('#/r/');const y=isDetail?0:(SCROLL[h]||0);curHash=h;requestAnimationFrame(function(){requestAnimationFrame(function(){window.scrollTo(0,y);});});}
+  const isDetail=h.startsWith('#/s/')||h.startsWith('#/r/');const y=isDetail?0:(SCROLL[h]||0);curHash=h;window.scrollTo(0,y);requestAnimationFrame(function(){requestAnimationFrame(function(){window.scrollTo(0,y);});});}
 window.addEventListener('hashchange',route);route();
 try{const mf={name:'我们的旅行',short_name:'我们的旅行',start_url:'.',display:'standalone',background_color:'#f4f5f3',theme_color:'#0e7490',icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" rx="96" fill="#0e7490"/><text x="50%" y="54%" font-size="300" text-anchor="middle" dominant-baseline="middle">🧳</text></svg>'),sizes:'512x512',type:'image/svg+xml'}]};const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));document.head.appendChild(l);}catch(e){}
 if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
