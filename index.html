@@ -59,7 +59,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .trip .t2{font-size:12.5px;color:var(--muted);margin-top:1px}
 .trip .ch{color:var(--muted);font-size:20px;flex:0 0 auto}
 .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
-.p-ok{background:var(--ok-b);color:var(--ok-i)} .p-plan{background:var(--plan-b);color:var(--plan-i)} .p-idea{background:var(--idea-b);color:var(--idea-i)}
+.p-ok{background:var(--ok-b);color:var(--ok-i)} .p-plan{background:var(--plan-b);color:var(--plan-i)} .p-idea{background:var(--idea-b);color:var(--idea-i)} .p-done{background:var(--line);color:var(--muted)}
 .prog{height:5px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:7px}
 .prog>i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
 .dhero{padding:4px 4px 0}
@@ -67,9 +67,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;color:var(--ink);box-shadow:var(--shadow)}
 .chip b{font-weight:700}
-.cd{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:13px;padding:10px 14px;margin:12px 0 2px}
-.cd .cdn{font-size:17px;font-weight:800;color:var(--accent-ink)}
-.icsbtn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap}
+.datechip{background:var(--accent);border-color:var(--accent);color:#fff;text-decoration:none;cursor:pointer}
 .docbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 2px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:13px;padding:12px;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer}
 .block{margin:18px 0}
 .block h3{font-size:15px;margin:0 0 9px;display:flex;align-items:center;gap:7px;font-weight:700}
@@ -99,7 +97,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .it:last-child .rail .ln{display:none}
 .it .ct{flex:1;padding-bottom:14px}
 .it .ct .h{font-size:14.5px;font-weight:700;line-height:1.3}
-.it .ct .n{font-size:12.5px;color:var(--muted);margin-top:1px}
+.it .ct .n{font-size:12px;color:var(--muted);opacity:.8;margin-top:1px}
 .chk{display:flex;align-items:flex-start;gap:11px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
 .chk:last-child{border-bottom:none}
 .chk .box{width:21px;height:21px;border-radius:7px;border:2px solid var(--line);flex:0 0 auto;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:.15s;font-size:13px;color:#fff}
@@ -369,7 +367,7 @@ function fetchWX(t){
 const SCROLL={};let curHash=null;
 function daysTo(s){const t=new Date();t.setHours(0,0,0,0);const d=new Date(s+'T00:00:00');return Math.round((d-t)/864e5);}
 function cdText(n){return n>1?[n+' 天','后出发']:n===1?['明天出发','✦']:n===0?['今天出发','✦']:['已结束',''];}
-function cdLong(n){return n>1?('还有 '+n+' 天'):n===1?'明天出发':n===0?'今天出发':'已结束';}
+function isPast(t){return daysTo(t.start)+t.days-1<0;}
 let CHK={};try{CHK=JSON.parse(localStorage.getItem('trip_checks')||'{}')}catch(e){}
 function saveChk(){try{localStorage.setItem('trip_checks',JSON.stringify(CHK))}catch(e){}}
 function prog(t){if(!t.checklist)return null;const done=t.checklist.filter(c=>CHK[t.id+'::'+c[0]]).length;return{done,total:t.checklist.length};}
@@ -383,6 +381,7 @@ function WMO(c){const m={0:['☀️','晴'],1:['🌤️','晴间多云'],2:['⛅
 function renderHome(){
   setTabs('#/');bar.querySelector('h1').textContent='我们的旅行';showBack(false);
   const sorted=[...TRIPS].sort((a,b)=>a.start.localeCompare(b.start));
+  const list=sorted.filter(t=>!isPast(t)).concat(sorted.filter(isPast));
   const next=sorted.find(t=>daysTo(t.start)>=0)||sorted[0];
   const booked=TRIPS.filter(t=>t.status!=='idea').length;
   barsub.textContent=booked+' 程已定 · '+(TRIPS.length-booked)+' 程规划中';
@@ -394,11 +393,6 @@ function renderHome(){
     <div class="big">${a}${bb&&bb!=='✦'?'<small>'+bb+'</small>':''}</div>
     <div class="meta">${fmt(next.start)} · ${next.days} 天 · ${esc(next.transport)}<span id="herowx"></span></div>
     <span class="go">查看行程 →</span></div>`;
-  h+=`<a class="hero" href="parks.html" style="display:block;text-decoration:none;margin-top:12px;background:linear-gradient(135deg,#143a44,#0e2a38);border:1px solid #caa24a66">
-    <div class="lab" style="color:#e7c06a">🎁 小游戏 · 国家公园打卡</div>
-    <div class="nm">🗺️ 美国国家公园图鉴</div>
-    <div class="meta">63 座公园 · 刮开打卡 · 加密签名防改 · 可分享给朋友</div>
-    <span class="go" style="color:#e7c06a">开始刮卡 →</span></a>`;
   h+=`<div class="tiles">
     <div class="tile" data-go="#/overview"><div class="ic2">🗓️</div><div class="tl">排期 & 季节</div><div class="ts">为什么这么排</div></div>
     <div class="tile" data-go="#/guide"><div class="ic2">🧭</div><div class="tl">通用攻略</div><div class="ts">订票订房打包</div></div>
@@ -406,39 +400,37 @@ function renderHome(){
     <div class="tile" data-go="__docs__"><div class="ic2">📄</div><div class="tl">全部文档</div><div class="ts">Google Drive</div></div>
   </div>`;
   h+='<div class="sec">全部行程</div><div class="card">';
-  sorted.forEach(t=>{const st=ST[t.status];const p=prog(t);
-    h+=`<div class="trip" data-go="#/t/${t.id}">
+  list.forEach(t=>{const past=isPast(t);const st=past?['p-done','✔']:ST[t.status];const p=prog(t);
+    h+=`<div class="trip" data-go="#/t/${t.id}"${past?' style="opacity:.6"':''}>
       <div class="ic">${t.emoji}</div>
       <div class="tx"><div class="t1">${t.name} <span style="color:var(--muted);font-weight:600;font-size:13px">${t.en}</span></div>
-      <div class="t2">${fmt(t.start)} · ${t.days} 天 · <span class="pill ${st[0]}">${st[1]} ${esc(t.statusText)}</span></div>
-      ${p?`<div class="prog"><i style="width:${p.total?Math.round(p.done/p.total*100):0}%"></i></div>`:''}</div>
+      <div class="t2">${fmt(t.start)} · ${t.days} 天 · <span class="pill ${st[0]}">${st[1]} ${past?'已完成':esc(t.statusText)}</span></div>
+      ${p&&!past?`<div class="prog"><i style="width:${p.total?Math.round(p.done/p.total*100):0}%"></i></div>`:''}</div>
       <div class="ch">›</div></div>`;});
   h+='</div>';
   h+='<div class="sec">出行前必看</div><div class="gcard">'+GUIDE.quick.map(q=>`<div class="gli">${gi(q)}</div>`).join('')+'</div>';
-  h+=`<div class="docbtn" data-go="#/guide">🧭 打开通用攻略（机票/酒店/租车/年票/打包/避坑）</div>`;
-  h+='<div class="foot">数据来自你的旅行工作区 · 想加或改内容告诉我即可</div></div>';
+  h+='</div>';
   view.innerHTML=h;bindGo();heroWeather(next);
 }
 function renderTrip(id){
   const t=TRIPS.find(x=>x.id===id);if(!t)return renderHome();
   setTabs('');bar.querySelector('h1').textContent=t.name;barsub.textContent='';showBack(true);
-  const st=ST[t.status];let h='<div class="wrap fade"><div class="dhero">';
+  const past=isPast(t),st=past?['p-done','✔']:ST[t.status];let h='<div class="wrap fade"><div class="dhero">';
   h+=`<div style="font-size:30px">${t.emoji}</div><div class="dtitle">${t.name} <span style="font-size:15px;color:var(--muted);font-weight:600">${t.en}</span></div>
-    <span class="pill ${st[0]}">${st[1]} ${esc(t.statusText)}</span>`;
-  h+='<div class="chips">'+(t.chips||[['📅',fmt(t.start)],['🧭',t.days+' 天'],['🚗',t.transport]]).map(c=>`<span class="chip">${c[0]} <b>${esc(c[1])}</b></span>`).join('')+'</div>';
-  h+=`<div class="cd"><span class="cdn">⏳ ${cdLong(daysTo(t.start))}</span><a class="icsbtn" id="icsbtn">📅 加到日历提醒</a></div>`;
-  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 打开完整保姆级攻略（Google 文档）</a>`;
-  h+=`<div class="note" style="margin-top:8px;font-size:12.5px">🔒 机票 / 酒店 / 票务确认号等私密信息放在 Google 文档里（点上方按钮查看），不显示在网页上。</div></div>`;
-  h+=`<div class="docbtn" data-go="#/p/${t.id}" style="margin-top:6px">🧳 出发前准备 · 打包 / 预算 / 订票攻略 ›</div>`;
+    <span class="pill ${st[0]}">${st[1]} ${past?'已完成':esc(t.statusText)}</span>`;
+  const n=daysTo(t.start),cnt=past?'':n>1?' · 还有 '+n+' 天':n===1?' · 明天出发':n===0?' · 今天出发':' · 进行中';
+  h+='<div class="chips">'+`<a class="chip datechip" href="${gcalURL(t)}" target="_blank" rel="noopener">📅 <b>${fmt(t.start)} · ${t.days} 天${cnt}</b></a>`+(t.chips||[['',t.transport]]).filter(c=>c[0]!=='📅'&&c[0]!=='🧭').map(c=>`<span class="chip">${c[0]} <b>${esc(c[1])}</b></span>`).join('')+'</div>';
+  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 完整攻略 · Google 文档</a></div>`;
+  h+=`<div class="docbtn" data-go="#/p/${t.id}" style="margin-top:6px">🧳 出发前准备 ›</div>`;
   h+=`<div class="block" id="wxmount"><div class="wx" id="wxlive"><span class="now">🌡️</span><div style="flex:1"><div class="tnow" style="font-size:15px">实时天气加载中…</div><div class="wmeta">${esc(t.name)} ${esc(t.en)}</div></div></div>${t.weather?`<div class="note" style="margin-top:10px">🌦️ 季节预期：${esc(t.weather)}</div>`:''}</div>`;
-  if(t.itinerary){h+='<div class="block"><h3>🗺️ 逐日安排（点开看当天）</h3><div class="card">';
+  if(t.itinerary){h+='<div class="block"><h3>🗺️ 逐日安排</h3><div class="card">';
     t.itinerary.forEach((d,di)=>{h+=`<div class="trip" data-go="#/d/${t.id}/${di}"><div class="ic">${di+1}</div><div class="tx"><div class="t1">${esc(d.n)}</div><div class="t2">${esc(d.d)} · ${d.items.length} 个停靠点</div></div><div class="ch">›</div></div>`;});
     h+='</div></div>';}
   if(t.highlights){h+='<div class="block"><h3>✨ 亮点抢先看</h3><div class="card" style="padding:6px 15px">'+
     t.highlights.map((x,i)=>`<div class="food"${i===t.highlights.length-1?' style="border:none"':''}><span class="fn">${esc(x)}</span></div>`).join('')+'</div>'+
-    '<div class="note" style="margin-top:11px">这趟还在"建议"阶段——完整逐日攻略、餐厅、清单都在上面的 Google 文档里，定了日期我就把它升级成像旧金山那样的逐日卡片。</div></div>';}
+    '<div class="note" style="margin-top:11px">还在建议阶段：完整攻略见上方文档，定了日期就升级成逐日卡片。</div></div>';}
   if(t.checklist){const p=prog(t);h+=`<div class="block"><h3>✅ 出发前清单 <span style="color:var(--muted);font-weight:600;font-size:13px">${p.done}/${p.total}</span></h3><div class="card" style="padding:4px 15px">`+chkHTML(t)+'</div></div>';}
-  if(FX[t.id]&&FX[t.id].food){h+='<div class="block"><h3>🍽️ 吃什么（点开看详情）</h3>'+FX[t.id].food.map((f,fi)=>`<div class="fcard" data-go="#/r/${t.id}/${fi}"><div class="fh"><span class="fn2">${esc(f.n)} <span class="more">›</span></span><span class="fp">${esc(f.price||'')}</span></div><div class="fa">${esc(f.area||'')}</div>${f.dishes&&f.dishes.length?`<div class="fdish" style="margin-top:7px">${f.dishes.map(d=>`<span>${esc(d)}</span>`).join('')}</div>`:''}</div>`).join('')+'</div>';}
+  if(FX[t.id]&&FX[t.id].food){h+='<div class="block"><h3>🍽️ 吃什么</h3>'+FX[t.id].food.map((f,fi)=>`<div class="fcard" data-go="#/r/${t.id}/${fi}"><div class="fh"><span class="fn2">${esc(f.n)} <span class="more">›</span></span><span class="fp">${esc(f.price||'')}</span></div><div class="fa">${esc(f.area||'')}</div>${f.dishes&&f.dishes.length?`<div class="fdish" style="margin-top:7px">${f.dishes.map(d=>`<span>${esc(d)}</span>`).join('')}</div>`:''}</div>`).join('')+'</div>';}
   else if(t.food){h+='<div class="block"><h3>🍽️ 吃什么</h3><div class="card" style="padding:4px 15px">'+
     t.food.map(f=>`<div class="food"><span class="fn">${esc(f[0])}</span><span class="fd">${esc(f[1])}</span></div>`).join('')+'</div></div>';}
   if(t.tips){h+='<div class="block"><h3>💡 避坑提示</h3><ul class="tips">'+t.tips.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul></div>';}
@@ -465,7 +457,6 @@ function renderStop(tid,di,ii){
 }
 function initTripExtras(t){
   loadWeather(t);
-  const ib=document.getElementById('icsbtn');if(ib)ib.onclick=()=>downloadICS(t);
 }
 function loadWeather(t){
   const live=document.getElementById('wxlive');if(!GEO[t.id]||!live)return;
@@ -482,10 +473,9 @@ function heroWeather(t){
   const put=d=>{try{const c=d.current,[e]=WMO(c.weather_code),f=Math.round(c.temperature_2m);el.textContent=' · '+e+' '+f+'°C';}catch(_){}};
   fetchWX(t).then(put).catch(()=>{});
 }
-function downloadICS(t){
+function gcalURL(t){
   const d=t.start.replace(/-/g,'');const end=new Date(new Date(t.start+'T00:00:00').getTime()+t.days*864e5);const ed=end.getFullYear()+String(end.getMonth()+1).padStart(2,'0')+String(end.getDate()).padStart(2,'0');
-  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ourtrip//cn','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+t.id+'@ourtrip','DTSTAMP:'+d+'T000000Z','DTSTART;VALUE=DATE:'+d,'DTEND;VALUE=DATE:'+ed,'SUMMARY:'+t.emoji+' '+t.name+' 出发','DESCRIPTION:行程 '+SITE+'#/t/'+t.id,'BEGIN:VALARM','TRIGGER:-P7D','ACTION:DISPLAY','DESCRIPTION:一周后出发 '+t.name,'END:VALARM','BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:明天出发 '+t.name,'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download=t.id+'-'+t.name+'.ics';document.body.appendChild(a);a.click();a.remove();
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(t.emoji+' '+t.name)+'&dates='+d+'/'+ed+'&details='+encodeURIComponent('行程 '+SITE+'#/t/'+t.id);
 }
 function renderDay(tid,di){
   const t=TRIPS.find(x=>x.id===tid);if(!t||!t.itinerary)return renderHome();
@@ -497,8 +487,8 @@ function renderDay(tid,di){
   const co=COORD[t.id]||{};
   let h=`<div class="wrap fade"><div class="dhero"><div style="font-size:12px;color:var(--muted);font-weight:700">${t.emoji} ${esc(t.name)}</div><div class="dtitle" style="font-size:22px">${esc(d.n)}</div><div style="color:var(--muted);font-size:13px">${esc(d.d)}</div></div>`;
   if(pts)h+=`<div class="lmap" id="map_${t.id}_${di}"></div>`;
-  if(d.route)h+=`<a class="navlink" href="${d.route}" target="_blank" rel="noopener">📍 在 Google 地图打开整条路线 ↗</a>`;
-  h+=`<button class="etabtn" id="etabtn">📍 用当前位置算各段实时耗时</button>`;
+  if(d.route)h+=`<a class="navlink" href="${d.route}" target="_blank" rel="noopener">📍 整条路线 · Google 地图 ↗</a>`;
+  h+=`<button class="etabtn" id="etabtn">📍 按当前位置算各段耗时</button>`;
   let tl='<div class="tl">';
   d.items.forEach((it,ii)=>{const hd=DETAIL[t.id]&&DETAIL[t.id][it[1]];const leg=legs&&legs[ii];const c=co[it[1]];
     tl+=`<div class="it"><div class="tm">${esc(it[0])}</div><div class="rail"><div class="dot"></div><div class="ln"></div></div><div class="ct">${leg?`<div class="legtag">${esc(leg)}</div>`:''}<div class="h">${hd?`<a data-go="#/s/${t.id}/${di}/${ii}">${esc(it[1])} <span class="more">详情 ›</span></a>`:esc(it[1])}</div>${it[2]?`<div class="n">${esc(it[2])}</div>`:''}${c?`<div class="navrow"><a class="navm" href="https://www.google.com/maps/dir/?api=1&destination=${c[0]},${c[1]}" target="_blank" rel="noopener">🧭 导航</a><span class="eta" id="eta_${di}_${ii}"></span></div>`:''}</div></div>`;
@@ -530,9 +520,9 @@ function computeETAs(t,di,btn){
     fetch('https://router.project-osrm.org/table/v1/driving/'+coords+'?sources=0&annotations=duration,distance',ac?{signal:ac.signal}:{}).then(r=>r.json()).then(function(dat){
       const dur=dat.durations&&dat.durations[0],dis=dat.distances&&dat.distances[0];
       list.forEach(function(x,k){const el=document.getElementById('eta_'+di+'_'+x.ii);if(!el)return;const sec=dur&&dur[k+1],met=dis&&dis[k+1];if(sec==null){el.textContent='';return;}const drive=Math.round(sec/60);let line='🚗 '+drive+'分';if(met!=null&&drive<=40){const walk=Math.round(met/80),tran=Math.round(drive*1.5)+6;line='🚶 '+walk+'分 · '+line+' · 🚌 '+tran+'分';}el.innerHTML='　'+line;});
-      btn.textContent='✅ 已按当前位置估算（驾车实时路网 · 步行/公交为估算，准确以导航为准）';btn.disabled=false;
-    }).catch(function(){btn.textContent='⚠️ 网络不佳，算不出来——点各段导航按钮看实时';btn.disabled=false;});
-  },function(){btn.textContent='⚠️ 未取得定位，点导航按钮也能从当前位置出发';btn.disabled=false;},{enableHighAccuracy:false,timeout:8000,maximumAge:60000});
+      btn.textContent='✅ 已估算 · 步行/公交为约数，以导航为准';btn.disabled=false;
+    }).catch(function(){btn.textContent='⚠️ 网络不佳，点各段导航看实时';btn.disabled=false;});
+  },function(){btn.textContent='⚠️ 未取得定位，可点各段导航';btn.disabled=false;},{enableHighAccuracy:false,timeout:8000,maximumAge:60000});
 }
 function renderPrep(tid){
   const t=TRIPS.find(x=>x.id===tid);if(!t)return renderHome();
@@ -550,7 +540,7 @@ function renderPrep(tid){
   if(p&&p.booking)h+=p.booking.map(b=>`<div class="gcard" style="margin-bottom:10px"><div style="font-weight:700;font-size:14px;padding:8px 1px 5px">${esc(b.t)}</div>`+b.steps.map((s,i)=>`<div class="gli">${i+1}. ${gi(s)}</div>`).join('')+'</div>').join('');
   else h+='<div class="gcard"><div class="gli">机票/酒店/租车的通用分步见「🧭 攻略」页；本趟具体（在哪订、怎么订）我可按你的选择补成分步教程。</div></div>';
   h+='</div>';
-  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 打开完整保姆级攻略（订票/自驾详版）</a>`;
+  h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 完整攻略 · Google 文档</a>`;
   h+=`<div class="docbtn" data-go="#/t/${t.id}">← 返回 ${esc(t.name)} 行程</div>`;
   h+='</div>';view.innerHTML=h;bindGo();
 }
