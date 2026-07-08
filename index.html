@@ -367,7 +367,8 @@ function fetchWX(t){
 const SCROLL={};let curHash=null;
 function daysTo(s){const t=new Date();t.setHours(0,0,0,0);const d=new Date(s+'T00:00:00');return Math.round((d-t)/864e5);}
 function cdText(n){return n>1?[n+' 天','后出发']:n===1?['明天出发','✦']:n===0?['今天出发','✦']:['已完成',''];}
-function isPast(t){return daysTo(t.start)+t.days-1<0;}
+function isPast(t){return t.status!=='idea'&&daysTo(t.start)+t.days-1<0;}
+function effStart(t){let s=t.start;if(t.status==='idea')while(daysTo(s)+t.days-1<0)s=(+s.slice(0,4)+1)+s.slice(4);return s;}
 let CHK={};try{CHK=JSON.parse(localStorage.getItem('trip_checks')||'{}')}catch(e){}
 function saveChk(){try{localStorage.setItem('trip_checks',JSON.stringify(CHK))}catch(e){}}
 function prog(t){if(!t.checklist)return null;const done=t.checklist.filter(c=>CHK[t.id+'::'+c[0]]).length;return{done,total:t.checklist.length};}
@@ -380,18 +381,18 @@ function WMO(c){const m={0:['☀️','晴'],1:['🌤️','晴间多云'],2:['⛅
 
 function renderHome(){
   setTabs('#/');bar.querySelector('h1').textContent='我们的旅行';showBack(false);
-  const sorted=[...TRIPS].sort((a,b)=>a.start.localeCompare(b.start));
+  const sorted=[...TRIPS].sort((a,b)=>effStart(a).localeCompare(effStart(b)));
   const list=sorted.filter(t=>!isPast(t)).concat(sorted.filter(isPast));
-  const next=sorted.find(t=>daysTo(t.start)>=0)||sorted[0];
+  const next=sorted.find(t=>daysTo(effStart(t))>=0)||sorted[0];
   const booked=TRIPS.filter(t=>t.status!=='idea').length;
   barsub.textContent=booked+' 程已定 · '+(TRIPS.length-booked)+' 程规划中';
-  const [a,bb]=cdText(daysTo(next.start));
+  const [a,bb]=cdText(daysTo(effStart(next)));
   let h='<div class="wrap fade">';
   h+='<div class="greet">尔湾出发 · 轻松慢节奏</div>';
   h+=`<div class="hero" data-go="#/t/${next.id}"><div class="glow"></div>
     <div class="lab">下一程</div><div class="nm">${next.emoji} ${next.name} ${next.en}</div>
     <div class="big">${a}${bb&&bb!=='✦'?'<small>'+bb+'</small>':''}</div>
-    <div class="meta">${fmt(next.start)} · ${next.days} 天 · ${esc(next.transport)}<span id="herowx"></span></div>
+    <div class="meta">${fmt(effStart(next))} · ${next.days} 天 · ${esc(next.transport)}<span id="herowx"></span></div>
     <span class="go">查看行程 →</span></div>`;
   h+=`<div class="tiles">
     <div class="tile" data-go="#/overview"><div class="ic2">🗓️</div><div class="tl">排期 & 季节</div><div class="ts">为什么这么排</div></div>
@@ -402,7 +403,7 @@ function renderHome(){
     h+=`<div class="trip" data-go="#/t/${t.id}"${past?' style="opacity:.6"':''}>
       <div class="ic">${t.emoji}</div>
       <div class="tx"><div class="t1">${t.name} <span style="color:var(--muted);font-weight:600;font-size:13px">${t.en}</span></div>
-      <div class="t2">${fmt(t.start)} · ${t.days} 天 · <span class="pill ${st[0]}">${st[1]} ${past?'已完成':esc(t.statusText)}</span></div>
+      <div class="t2">${fmt(effStart(t))} · ${t.days} 天 · <span class="pill ${st[0]}">${st[1]} ${past?'已完成':esc(t.statusText)}</span></div>
       ${p&&!past?`<div class="prog"><i style="width:${p.total?Math.round(p.done/p.total*100):0}%"></i></div>`:''}</div>
       <div class="ch">›</div></div>`;});
   h+='</div>';
@@ -416,8 +417,8 @@ function renderTrip(id){
   const past=isPast(t),st=past?['p-done','✔']:ST[t.status];let h='<div class="wrap fade"><div class="dhero">';
   h+=`<div style="font-size:30px">${t.emoji}</div><div class="dtitle">${t.name} <span style="font-size:15px;color:var(--muted);font-weight:600">${t.en}</span></div>
     <span class="pill ${st[0]}">${st[1]} ${past?'已完成':esc(t.statusText)}</span>`;
-  const n=daysTo(t.start),cnt=past?'':n>1?' · 还有 '+n+' 天':n===1?' · 明天出发':n===0?' · 今天出发':' · 进行中';
-  h+='<div class="chips">'+`<a class="chip datechip" href="${gcalURL(t)}" target="_blank" rel="noopener">📅 <b>${fmt(t.start)} · ${t.days} 天${cnt}</b></a>`+(t.chips||[['',t.transport]]).filter(c=>c[0]!=='📅'&&c[0]!=='🧭').map(c=>`<span class="chip">${c[0]} <b>${esc(c[1])}</b></span>`).join('')+'</div>';
+  const n=daysTo(effStart(t)),cnt=past?'':n>1?' · 还有 '+n+' 天':n===1?' · 明天出发':n===0?' · 今天出发':' · 进行中';
+  h+='<div class="chips">'+`<a class="chip datechip" href="${gcalURL(t)}" target="_blank" rel="noopener">📅 <b>${fmt(effStart(t))} · ${t.days} 天${cnt}</b></a>`+(t.chips||[['',t.transport]]).filter(c=>c[0]!=='📅'&&c[0]!=='🧭').map(c=>`<span class="chip">${c[0]} <b>${esc(c[1])}</b></span>`).join('')+'</div>';
   h+='</div>';
   h+=`<a class="docbtn" href="${t.doc}" target="_blank" rel="noopener">📄 完整攻略</a>`;
   h+=`<div class="docbtn" data-go="#/p/${t.id}" style="margin-top:6px">🧳 出发前准备 ›</div>`;
@@ -473,7 +474,7 @@ function heroWeather(t){
   fetchWX(t).then(put).catch(()=>{});
 }
 function gcalURL(t){
-  const d=t.start.replace(/-/g,'');const end=new Date(new Date(t.start+'T00:00:00').getTime()+t.days*864e5);const ed=end.getFullYear()+String(end.getMonth()+1).padStart(2,'0')+String(end.getDate()).padStart(2,'0');
+  const es=effStart(t);const d=es.replace(/-/g,'');const end=new Date(new Date(es+'T00:00:00').getTime()+t.days*864e5);const ed=end.getFullYear()+String(end.getMonth()+1).padStart(2,'0')+String(end.getDate()).padStart(2,'0');
   return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(t.emoji+' '+t.name)+'&dates='+d+'/'+ed+'&details='+encodeURIComponent('行程 '+SITE+'#/t/'+t.id);
 }
 function renderDay(tid,di){
