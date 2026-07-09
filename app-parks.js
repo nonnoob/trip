@@ -128,16 +128,6 @@ function buzz(p){if(SOUND&&navigator.vibrate){try{navigator.vibrate(p);}catch(e)
 $('#btnSound').textContent=SOUND?'🔊':'🔇';
 $('#btnSound').onclick=()=>{SOUND=!SOUND;localStorage.setItem('np_sound',SOUND?'1':'0');$('#btnSound').textContent=SOUND?'🔊':'🔇';if(SOUND){ensureAudio();sfxDing();}};
 
-/* ---------- boundary data (baked static, park-bounds.js) ---------- */
-const BCACHE={};
-function fetchBoundary(p){
-  if(BCACHE[p.id]!==undefined)return Promise.resolve(BCACHE[p.id]);
-  const rings=(window.PARK_BOUNDS||{})[p.id];
-  let fc=null;
-  if(rings&&rings.length){fc={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:rings.map(flat=>{const c=[];for(let i=0;i<flat.length;i+=2)c.push([flat[i],flat[i+1]]);return c;})}}]};}
-  BCACHE[p.id]=fc;return Promise.resolve(fc);
-}
-
 /* ---------- national overview ---------- */
 let usFeatures=null, stateEls={}, markEls={};
 async function buildNational(){
@@ -187,7 +177,7 @@ function enterState(name){
   head.innerHTML='<button class="sv-back">‹ 全美</button><div class="sv-mascot">'+(st?st.m:'📍')+'</div><div class="sv-title">'+(st?st.zh:name)+'<small>'+name+'</small></div><div class="sv-sub"><b id="svDone">'+ps.filter(p=>isVisited(p.id)).length+'</b>/'+ps.length+' 座<br>已点亮</div>';
   host.appendChild(head);head.querySelector('.sv-back').onclick=backToNation;
   const stage=el('div','sv-stage');host.appendChild(stage);
-  stage.addEventListener('click',function(e){if(!e.target.closest('.sv-callout,.park-fig,.medallion'))closeCallout();});
+  stage.addEventListener('click',function(e){if(!e.target.closest('.sv-callout,.medallion'))closeCallout();});
   setMode('state');window.scrollTo(0,0);
   curState=name;if(!SHARE){const ab=(NAME2STATE[name]&&NAME2STATE[name].ab)||name;const h='#st='+encodeURIComponent(ab);if(location.hash!==h)history.replaceState(null,'',h);}
   if(!ps.length){stage.innerHTML='<div class="sv-emptly"><div class="big2">'+(st?st.m:'🗺️')+'</div><div style="margin-top:8px">'+(st?st.zh:name)+'目前还没有国家公园</div><div style="font-size:12px;margin-top:4px">换个州试试 →</div></div>';return;}
@@ -209,7 +199,7 @@ function enterState(name){
     let ins=bb?[bb[0][0]+FIG*0.5,bb[0][1]+FIG*0.5,bb[1][0]-FIG*0.5,bb[1][1]-FIG*0.5]:[FIG*0.5,FIG*0.5,W-FIG*0.5,Hs-FIG*0.5];
     if(ins[2]<ins[0]){const m=(ins[0]+ins[2])/2;ins[0]=ins[2]=m;}if(ins[3]<ins[1]){const m=(ins[1]+ins[3])/2;ins[1]=ins[3]=m;}
     relax(pts,hmin,vmin,ins,cen,proj,feat);
-    pts.forEach(pt=>{const ph=el('div','park-fig');ph.style.left=pt.x+'px';ph.style.top=pt.y+'px';ph.innerHTML='<div style="width:'+FIG+'px;height:'+FIG+'px;border-radius:50%;background:#143240;margin:0 auto"></div>';stage.appendChild(ph);const small=FIG<92;fetchBoundary(pt.p).then(fc=>{ph.replaceWith(fc?makeFigure(pt.p,pt.x,pt.y,FIG,fc):makeMedallion(pt.p,pt.x,pt.y,small));}).catch(()=>{ph.replaceWith(makeMedallion(pt.p,pt.x,pt.y,small));});});
+    pts.forEach(pt=>{stage.appendChild(makeMedallion(pt.p,pt.x,pt.y,FIG));});
   },30);
 }
 function relax(pts,hmin,vmin,ins,cen,proj,feat){
@@ -233,38 +223,13 @@ function initScratch(cv,grayEl,clipD,p,finalize){
     fx:{ensureAudio,scratch:sfxScratch,ding:sfxDing,buzz}
   });
 }
-/* ---------- park figure (real boundary shape) ---------- */
-function fcShape(fc,FIG){
-  const pts=[],rings=[];const dig=a=>{if(Array.isArray(a)&&Array.isArray(a[0])&&typeof a[0][0]==='number'){rings.push(a);for(const q of a)pts.push(q);}else if(Array.isArray(a))a.forEach(dig);};
-  (fc.features||[]).forEach(f=>{if(f.geometry)dig(f.geometry.coordinates);});
-  if(!pts.length)return null;
-  let proj;try{proj=d3.geoMercator().fitExtent([[9,9],[FIG-9,FIG-9]],{type:'MultiPoint',coordinates:pts});}catch(e){return null;}
-  let d='',minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
-  rings.forEach(r=>{let started=false;r.forEach(pt=>{const q=proj(pt);if(!q||isNaN(q[0]))return;d+=(started?'L':'M')+q[0].toFixed(2)+','+q[1].toFixed(2);started=true;if(q[0]<minx)minx=q[0];if(q[0]>maxx)maxx=q[0];if(q[1]<miny)miny=q[1];if(q[1]>maxy)maxy=q[1];});if(started)d+='Z';});
-  if(!d)return null;
-  return {d:d,cen:[(minx+maxx)/2,(miny+maxy)/2]};
-}
-function makeFigure(p,x,y,FIG,fc){
-  const vis=isVisited(p.id),tam=isTamper(p.id);let D='',cen=[FIG/2,FIG/2];
-  const sh=fcShape(fc,FIG);if(sh){D=sh.d;cen=sh.cen;}
-  if(!D)return makeMedallion(p,x,y,FIG<104);
-  const cont=el('div','park-fig');cont.style.left=x+'px';cont.style.top=y+'px';cont.style.width=FIG+'px';cont.style.height=FIG+'px';cont.setAttribute('data-id',p.id);
-  const disc=el('div','fig-disc');disc.style.width=FIG+'px';disc.style.height=FIG+'px';
-  const wrap=el('div','fig-wrap'+(vis?' color':''));
-  wrap.innerHTML='<svg class="fig-svg" viewBox="0 0 '+FIG+' '+FIG+'"><defs><linearGradient id="fg_'+p.id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e7e8c"/><stop offset="1" stop-color="#2f7d5a"/></linearGradient></defs><path d="'+D+'" fill="url(#fg_'+p.id+')" class="'+(vis||tam?'done':'')+'"'+(tam?' stroke="#ef6f6f"':'')+'/></svg>';
-  const emo=el('div','fig-emoji');emo.style.cssText='position:absolute;left:'+cen[0]+'px;top:'+cen[1]+'px;transform:translate(-50%,-50%);font-size:'+Math.round(FIG*0.3)+'px';emo.textContent=p.em;wrap.appendChild(emo);
-  disc.appendChild(wrap);disc.style.cursor='pointer';
-  if(!vis){const cv=el('canvas','fig-canvas');disc.appendChild(cv);initScratch(cv,wrap,D,p,()=>{wrap.classList.add('color');const pa=wrap.querySelector('path');if(pa)pa.classList.add('done');finishCheck(p);});}
-  else{disc.onclick=()=>showCallout(p);}
-  cont.appendChild(disc);
-  return cont;
-}
-/* ---------- medallion fallback ---------- */
-function makeMedallion(p,x,y,small){
-  const vis=isVisited(p.id), tam=isTamper(p.id);const SZ=small?64:84;
+/* ---------- 徽章：emoji 圆章（边界轮廓已弃用，ADR-0011） ---------- */
+function makeMedallion(p,x,y,FIG){
+  const vis=isVisited(p.id), tam=isTamper(p.id);
+  const SZ=Math.max(44,Math.min(Math.round(FIG),96)), small=SZ<72;
   const m=el('div','medallion'+(small?' small':''));m.style.left=x+'px';m.style.top=y+'px';m.setAttribute('data-id',p.id);
   const disc=el('div','med-disc');disc.style.width=SZ+'px';disc.style.height=SZ+'px';
-  const base=el('div','med-base'+(vis?' color':''));base.style.fontSize=small?'30px':'42px';base.textContent=p.em;
+  const base=el('div','med-base'+(vis?' color':''));base.style.fontSize=Math.round(SZ*0.47)+'px';base.textContent=p.em;
   const ring=el('div','med-ring'+(vis||tam?' done':''));if(tam)ring.style.borderColor='var(--bad)';
   disc.appendChild(base);disc.appendChild(ring);disc.style.cursor='pointer';
   if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,Scratchable.circlePath(SZ),p,()=>{ring.classList.add('done');finishCheck(p);});}
