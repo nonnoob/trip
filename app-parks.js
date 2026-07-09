@@ -198,17 +198,16 @@ function enterState(name){
     // keep disc centers inside the state's box
     let ins=bb?[bb[0][0]+FIG*0.5,bb[0][1]+FIG*0.5,bb[1][0]-FIG*0.5,bb[1][1]-FIG*0.5]:[FIG*0.5,FIG*0.5,W-FIG*0.5,Hs-FIG*0.5];
     if(ins[2]<ins[0]){const m=(ins[0]+ins[2])/2;ins[0]=ins[2]=m;}if(ins[3]<ins[1]){const m=(ins[1]+ins[3])/2;ins[1]=ins[3]=m;}
-    relax(pts,hmin,vmin,ins,cen,proj,feat);
+    relax(pts,hmin,vmin,ins);
     pts.forEach(pt=>{stage.appendChild(makeMedallion(pt.p,pt.x,pt.y,FIG));});
   },30);
 }
-function relax(pts,hmin,vmin,ins,cen,proj,feat){
-  const inside=(x,y)=>{if(!proj||!proj.invert||!feat||!window.d3)return true;try{const ll=proj.invert([x,y]);return !!(ll&&d3.geoContains(feat,ll));}catch(e){return true;}};
-  /* 真实位置就在州面外的公园（岛屿/外海，如干龟、海峡群岛）不往州里拽——待在真实位置附近才准 */
-  pts.forEach(pt=>{pt._in=inside(pt.x,pt.y);});
+/* layout: push apart + clamp to stage only. No drag-back into the state polygon:
+   offshore/island parks (drytortugas, channelislands...) truly sit outside it. */
+function relax(pts,hmin,vmin,ins){
   for(let it=0;it<90;it++){let moved=false;
     for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const a=pts[i],b=pts[j];let nx=(b.x-a.x)/hmin,ny=(b.y-a.y)/vmin;let d2=nx*nx+ny*ny;if(d2<1){let d=Math.sqrt(d2)||0.001;let ux=nx/d,uy=ny/d,push=(1-d)/2;a.x-=ux*push*hmin;a.y-=uy*push*vmin;b.x+=ux*push*hmin;b.y+=uy*push*vmin;moved=true;}}
-    for(const pt of pts){pt.x=Math.max(ins[0],Math.min(ins[2],pt.x));pt.y=Math.max(ins[1],Math.min(ins[3],pt.y));if(pt._in){let tr=0;while(!inside(pt.x,pt.y)&&tr++<10){pt.x+=(cen[0]-pt.x)*0.28;pt.y+=(cen[1]-pt.y)*0.28;}}}
+    for(const pt of pts){pt.x=Math.max(ins[0],Math.min(ins[2],pt.x));pt.y=Math.max(ins[1],Math.min(ins[3],pt.y));}
     if(!moved)break;
   }
 }
