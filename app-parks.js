@@ -146,11 +146,11 @@ async function buildNational(){
   // labels: state abbr only (mascot is shown in the state view)
   const lg=svg.append('g');
   fc.features.forEach(d=>{const st=NAME2STATE[d.properties.name];if(!st)return;const c=path.centroid(d);if(!c||isNaN(c[0]))return;lg.append('text').attr('class','ab').attr('x',c[0]).attr('y',c[1]+3).text(st.ab);});
-  // territory inset
-  const tb={x:792,y:486,w:152,h:92};
+  // territory inset（放东海岸外大西洋空域，采样验证不压州面与公园标记；原位置压佛州）
+  const tb={x:810,y:380,w:130,h:80};
   svg.append('rect').attr('x',tb.x).attr('y',tb.y).attr('width',tb.w).attr('height',tb.h).attr('rx',8).attr('fill','#0e2734').attr('stroke','#23495a').attr('stroke-width',.8);
   svg.append('text').attr('x',tb.x+tb.w/2).attr('y',tb.y+15).attr('text-anchor','middle').attr('fill','#5d8794').attr('font-size','10').text('海外属地');
-  const terr={virginislands:[tb.x+46,tb.y+58],samoa:[tb.x+106,tb.y+58]};
+  const terr={virginislands:[tb.x+38,tb.y+50],samoa:[tb.x+92,tb.y+50]};
   // park markers
   const mg=svg.append('g');
   PARKS.forEach(p=>{let xy=p._terr?terr[p.id]:proj([p.lng,p.lat]);if(!xy)return;const t=mg.append('text').attr('class','pmark').attr('x',xy[0]).attr('y',xy[1]+4).text(p.em).on('click',(ev)=>{ev.stopPropagation();if(p._terr)openInfo(p);else if(p._state)enterState(p._state);});markEls[p.id]=t.node();});
