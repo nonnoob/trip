@@ -185,7 +185,7 @@ function enterState(name){
   setTimeout(()=>{
     const W=Math.max(280,stage.clientWidth||340);const vh=(window.innerHeight||700);const Hs=Math.round(Math.max(W*0.62,Math.min(W*1.5,vh-196)));stage.style.minHeight=Hs+'px';
     let proj=null,bb=null,cen=[W/2,Hs/2];
-    if(window.d3&&feat){const svg=d3.select(stage).append('svg').attr('class','sv-bg').attr('viewBox','0 0 '+W+' '+Hs).style('width','100%').style('height',Hs+'px');proj=d3.geoMercator().fitExtent([[16,14],[W-16,Hs-14]],feat);const pth=d3.geoPath(proj);svg.append('path').attr('d',pth(feat));bb=pth.bounds(feat);const c=pth.centroid(feat);if(c&&!isNaN(c[0]))cen=c;}
+    if(window.d3&&feat){const svg=d3.select(stage).append('svg').attr('class','sv-bg').attr('viewBox','0 0 '+W+' '+Hs).style('width','100%').style('height',Hs+'px');proj=d3.geoMercator();if(name==='Alaska')proj.rotate([154,0]);/* 阿拉斯加跨 180° 经线，旋转避开反经线否则 fit 把全州压成一团 */proj.fitExtent([[16,14],[W-16,Hs-14]],feat);const pth=d3.geoPath(proj);svg.append('path').attr('d',pth(feat));bb=pth.bounds(feat);const c=pth.centroid(feat);if(c&&!isNaN(c[0]))cen=c;}
     const n=ps.length;
     // figure size scaled to fit inside the state's box
     let FIG;
@@ -211,12 +211,24 @@ function relax(pts,hmin,vmin,ins,cen,proj,feat){
   }
 }
 
+/* ---------- 打卡日期（默认今天，可补打往日；日期参与签名，须在记录前选定） ---------- */
+function todayStr(){const d=new Date();const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
+function askDate(){
+  return new Promise(resolve=>{
+    const t=todayStr();
+    openModal('<h3>打卡日期</h3><input class="inp" type="date" id="cd" value="'+t+'" max="'+t+'"><div class="mbtns"><button id="dc">取消</button><button class="pri" id="dk">打卡</button></div>');
+    $('#dc').onclick=()=>{closeModal();resolve(null);};
+    $('#dk').onclick=()=>{const v=$('#cd').value||t;closeModal();resolve(v);};
+  });
+}
+let PENDING_DATE=null;
+
 /* ---------- scratch core（手势/涂层/多指防误刮在 scratchable.js，这里只接业务） ---------- */
 function initScratch(cv,grayEl,clipD,p,finalize){
   Scratchable.attach(cv,{
     clip:clipD,
     disabled:()=>SHARE,
-    confirm:ensurePriv,
+    confirm:async()=>{if(!await ensurePriv())return false;const d=await askDate();if(!d)return false;PENDING_DATE=d;return true;},
     onProgress:k=>{grayEl.style.filter=k>=1?'none':'grayscale('+(1-k)+') brightness('+(0.8+0.25*k)+')';},
     onReveal:finalize,
     onTap:()=>showCallout(p),
@@ -239,7 +251,7 @@ function makeMedallion(p,x,y,FIG){
 }
 async function finishCheck(p){
   if(SHARE)return;if(!await ensurePriv())return;
-  await ledger.checkIn(p.id);schedulePush();
+  await ledger.checkIn(p.id,'',PENDING_DATE);PENDING_DATE=null;schedulePush();
   const sd=$('#svDone');if(sd&&p._state){const ps=parksInState(p._state);sd.textContent=ps.filter(x=>isVisited(x.id)).length;}
   renderProgress();stampAnim();toast('已点亮 · '+p.zh);
 }
@@ -306,7 +318,7 @@ function showCallout(p){
   const rm=c.querySelector('#cRemove');if(rm)bindHold(rm,function(){doRemove(p);});
 }
 function bindHold(btn,onDone){let raf=null,start=0,done=false;const bar=btn.querySelector('.prog2');const DUR=820;const step=t=>{if(!start)start=t;const k=Math.min(1,(t-start)/DUR);bar.style.width=(k*100)+'%';if(k>=1){done=true;cancel();onDone();}else raf=requestAnimationFrame(step);};const begin=e=>{e.preventDefault();done=false;start=0;raf=requestAnimationFrame(step);};const cancel=()=>{if(raf)cancelAnimationFrame(raf);raf=null;if(!done)bar.style.width='0%';};btn.addEventListener('pointerdown',begin);btn.addEventListener('pointerup',cancel);btn.addEventListener('pointerleave',cancel);btn.addEventListener('pointercancel',cancel);}
-async function doStamp(p){if(SHARE)return;if(!await ensurePriv())return;await ledger.checkIn(p.id);schedulePush();paintNational();renderProgress();closeSheet();stampAnim();toast('已点亮 · '+p.zh);}
+async function doStamp(p){if(SHARE)return;if(!await ensurePriv())return;const d=await askDate();if(!d)return;await ledger.checkIn(p.id,'',d);schedulePush();paintNational();renderProgress();closeSheet();stampAnim();toast('已点亮 · '+p.zh);}
 async function doRemove(p){if(SHARE)return;if(!await ensurePriv())return;ledger.remove(p.id);schedulePush();paintNational();renderProgress();closeSheet();toast('已取消打卡');if(MODE==='state'&&p._state)enterState(p._state);}
 
 /* ---------- unlock helpers ----------

@@ -80,10 +80,10 @@ function create(opts){
     },
     lock(){PRIV=null;CKEY=null;CID=null;},
 
-    /* 打卡：需已解锁。签名 id|date|note，写入并持久化 */
-    async checkIn(id,note){
+    /* 打卡：需已解锁。签名 id|date|note，写入并持久化。date 可选（YYYY-MM-DD，补打往日卡），缺省今天 */
+    async checkIn(id,note,date){
       if(share)throw new Error('readonly');if(!PRIV)throw new Error('locked');
-      const d=todayFn(), n=note||'';
+      const d=(typeof date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(date))?date:todayFn(), n=note||'';
       const sig=await subtle.sign({name:'ECDSA',hash:'SHA-256'},PRIV,msgOf(id,d,n));
       S.recs[id]={d:d,n:n,s:abToB64(sig)};VALID[id]=true;persist();return S.recs[id];
     },
