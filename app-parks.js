@@ -40,8 +40,10 @@ async function cloudSyncAfterUnlock(pass){
     if(!b){schedulePush();return;}
     const m=await ledger.mergeCloud(b);
     if(!m){toast('该口令已绑定另一份图鉴，云同步停用');return;}
-    if(m.added){refreshAll();toast('已从云端同步 '+m.added+' 条打卡');}
-    if(m.extra||localStorage.getItem(dirtyKey()))schedulePush();
+    const p=ledger.purgeInvalid();
+    if(m.added||p)refreshAll();
+    if(m.added)toast('已从云端同步 '+m.added+' 条打卡');
+    if(m.extra||p||localStorage.getItem(dirtyKey()))schedulePush();
   }catch(e){}
 }
 function refreshAll(){paintNational();renderProgress();renderBanner();if(MODE==='state'&&curState)enterState(curState);}
@@ -100,6 +102,8 @@ async function gate(){
     try{sessionStorage.removeItem('np_pass');}catch(e){}
   }
   try{sessionStorage.setItem('np_pass',pass);}catch(e){}
+  const p=ledger.purgeInvalid();
+  if(p){refreshAll();toast('已清除 '+p+' 条异常记录');schedulePush();}
 }
 const isVisited=id=>ledger.isVisited(id);
 const isTamper=id=>ledger.isTamper(id);

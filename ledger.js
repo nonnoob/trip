@@ -93,6 +93,13 @@ function create(opts){
     isTamper(id){return !!(S.recs[id]&&VALID[id]===false);},
     record(id){return S.recs[id]||null;},
 
+    /* 属主自愈：删掉全部验签失败的记录（只读分享不动）。返回删除条数 */
+    purgeInvalid(){
+      if(share)return 0;
+      let n=0;for(const id in S.recs){if(VALID[id]!==true){delete S.recs[id];delete VALID[id];n++;}}
+      if(n)persist();return n;
+    },
+
     /* 只导出验签通过的记录；编码格式不可变 */
     shareFragment(){
       const recs={};for(const id in S.recs){if(VALID[id])recs[id]=S.recs[id];}
