@@ -12,6 +12,37 @@ const ledger=window.Ledger.create({storage:{
   save(o){try{localStorage.setItem(LS,JSON.stringify(o));}catch(e){}}
 }});
 let SHARE=false, curRegion=null, MODE='nation', curState=null;
+
+/* ---------- 云存档（Cloudflare Worker 中转，ADR-0010） ----------
+   打卡后自动把加密存档推到 GitHub 仓库；任何设备输口令即恢复。CLOUD 为空则整套静默关闭 */
+const CLOUD='https://muddy-poetry-dea4.jacec2096.workers.dev';
+const DIRTY='np_dirty';
+async function cloudGet(id){const r=await fetch(CLOUD+'/atlas?id='+id,{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error('load '+r.status);return r.json();}
+let pushT=null;
+function schedulePush(){if(!CLOUD||SHARE)return;clearTimeout(pushT);pushT=setTimeout(cloudPush,1200);}
+async function cloudPush(){
+  if(!CLOUD||SHARE||!ledger.unlocked)return;
+  try{
+    const b=await ledger.exportCloud();
+    const r=await fetch(CLOUD+'/atlas',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});
+    if(r.status===409){localStorage.removeItem(DIRTY);toast('该口令已绑定另一份图鉴，云存档未更新');return;}
+    if(!r.ok)throw new Error(r.status);
+    localStorage.removeItem(DIRTY);
+  }catch(e){localStorage.setItem(DIRTY,'1');toast('云同步失败，下次打卡自动重试');}
+}
+/* 解锁后对账：云端缺的回传、本地缺的收进来 */
+async function cloudSyncAfterUnlock(pass){
+  if(!CLOUD||SHARE)return;
+  try{
+    const b=await cloudGet(await ledger.cloudId(pass));
+    if(!b){schedulePush();return;}
+    const m=await ledger.mergeCloud(b);
+    if(!m){toast('该口令已绑定另一份图鉴，云同步停用');return;}
+    if(m.added){refreshAll();toast('已从云端同步 '+m.added+' 条打卡');}
+    if(m.extra||localStorage.getItem(DIRTY))schedulePush();
+  }catch(e){}
+}
+function refreshAll(){paintNational();renderProgress();renderBanner();if(MODE==='state'&&curState)enterState(curState);}
 const isVisited=id=>ledger.isVisited(id);
 const isTamper=id=>ledger.isTamper(id);
 const visitedCount=()=>PARKS.reduce((n,p)=>n+(isVisited(p.id)?1:0),0);
@@ -181,7 +212,7 @@ function makeMedallion(p,x,y,small){
 }
 async function finishCheck(p){
   if(SHARE)return;if(!await ensurePriv())return;
-  await ledger.checkIn(p.id);
+  await ledger.checkIn(p.id);schedulePush();
   const sd=$('#svDone');if(sd&&p._state){const ps=parksInState(p._state);sd.textContent=ps.filter(x=>isVisited(x.id)).length;}
   renderProgress();stampAnim();toast('已点亮 · '+p.zh);
 }
@@ -249,11 +280,11 @@ function showCallout(p){
   const rm=c.querySelector('#cRemove');if(rm)bindHold(rm,function(){doRemove(p);});
 }
 function bindHold(btn,onDone){let raf=null,start=0,done=false;const bar=btn.querySelector('.prog2');const DUR=820;const step=t=>{if(!start)start=t;const k=Math.min(1,(t-start)/DUR);bar.style.width=(k*100)+'%';if(k>=1){done=true;cancel();onDone();}else raf=requestAnimationFrame(step);};const begin=e=>{e.preventDefault();done=false;start=0;raf=requestAnimationFrame(step);};const cancel=()=>{if(raf)cancelAnimationFrame(raf);raf=null;if(!done)bar.style.width='0%';};btn.addEventListener('pointerdown',begin);btn.addEventListener('pointerup',cancel);btn.addEventListener('pointerleave',cancel);btn.addEventListener('pointercancel',cancel);}
-async function doStamp(p){if(SHARE)return;if(!await ensurePriv())return;await ledger.checkIn(p.id);paintNational();renderProgress();closeSheet();stampAnim();toast('已点亮 · '+p.zh);}
-async function doRemove(p){if(SHARE)return;if(!await ensurePriv())return;ledger.remove(p.id);paintNational();renderProgress();closeSheet();toast('已取消打卡');if(MODE==='state'&&p._state)enterState(p._state);}
+async function doStamp(p){if(SHARE)return;if(!await ensurePriv())return;await ledger.checkIn(p.id);schedulePush();paintNational();renderProgress();closeSheet();stampAnim();toast('已点亮 · '+p.zh);}
+async function doRemove(p){if(SHARE)return;if(!await ensurePriv())return;ledger.remove(p.id);schedulePush();paintNational();renderProgress();closeSheet();toast('已取消打卡');if(MODE==='state'&&p._state)enterState(p._state);}
 
 /* ---------- unlock helpers ---------- */
-async function ensurePriv(){if(ledger.unlocked)return true;if(!ledger.hasIdentity){await openLock();return ledger.unlocked;}const pass=await askPass('请签名','你的口令');if(pass===null)return false;if(await ledger.unlock(pass)){setLockUI();return true;}toast('口令不对');return false;}
+async function ensurePriv(){if(ledger.unlocked)return true;if(!ledger.hasIdentity){await openLock();return ledger.unlocked;}const pass=await askPass('请签名','你的口令');if(pass===null)return false;if(await ledger.unlock(pass)){setLockUI();cloudSyncAfterUnlock(pass);return true;}toast('口令不对');return false;}
 function stampAnim(){const s=el('div','stamp-anim');s.textContent='VISITED';document.body.appendChild(s);requestAnimationFrame(()=>s.classList.add('go'));setTimeout(()=>s.remove(),1000);}
 
 /* ---------- modal ---------- */
@@ -266,9 +297,12 @@ function setLockUI(){const b=$('#btnLock');if(SHARE){b.textContent='👁';return
 function openLock(){
   return new Promise(resolve=>{
     if(SHARE){openModal('<h3>只读分享卡片</h3><p>你在看一张被加密签名保护的分享卡片，无法打卡或修改。卡片编号 <span class="fp">'+ledger.fp+'</span>。</p><p>想要自己的图鉴？去掉网址里 # 后面的内容重新打开即可。</p><div class="mbtns"><button class="pri" id="ok">好的</button></div>');$('#ok').onclick=()=>{closeModal();resolve();};return;}
-    if(!ledger.hasIdentity){openModal('<h3>请签名</h3><p>首次使用：设置一个口令作为你的签名，<b>无法找回</b>，请记牢。</p><input class="inp" type="password" id="p1" placeholder="设置口令"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">签名</button></div>');const p1=$('#p1');p1.focus();p1.onkeydown=e=>{if(e.key==='Enter')$('#o').click();};$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{const a=p1.value;if(a.length<4)return toast('口令至少 4 位');const btn=$('#o');btn.textContent='签名中…';btn.disabled=true;const fp=await ledger.setup(a);closeModal();setLockUI();toast('已签名 · 印章 '+fp);resolve();};return;}
+    if(!ledger.hasIdentity){openModal('<h3>请签名</h3><p>首次使用：设置一个口令作为你的签名，<b>无法找回</b>，请记牢。'+(CLOUD?'已有图鉴？输入原口令自动恢复。':'')+'</p><input class="inp" type="password" id="p1" placeholder="设置口令"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">签名</button></div>');const p1=$('#p1');p1.focus();p1.onkeydown=e=>{if(e.key==='Enter')$('#o').click();};$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{const a=p1.value;if(a.length<4)return toast('口令至少 4 位');const btn=$('#o');btn.textContent='签名中…';btn.disabled=true;
+      /* 先查云端：这个口令若已有存档就恢复，没有才新建（口令↔图鉴一一对应） */
+      if(CLOUD){try{const b=await cloudGet(await ledger.cloudId(a));if(b){const fp=await ledger.importCloud(a,b);if(fp){closeModal();setLockUI();refreshAll();toast('已恢复图鉴 · '+fp);resolve();return;}btn.textContent='签名';btn.disabled=false;return toast('找到存档但口令解不开，请重试');}}catch(e){}}
+      const fp=await ledger.setup(a);schedulePush();closeModal();setLockUI();toast('已签名 · 印章 '+fp);resolve();};return;}
     if(ledger.unlocked){openModal('<h3>已解锁 🔓</h3><p>卡片编号 <span class="fp">'+ledger.fp+'</span>，可以打卡。</p><div class="mbtns"><button id="lock">锁定</button><button class="pri" id="ok">完成</button></div>');$('#ok').onclick=()=>{closeModal();resolve();};$('#lock').onclick=()=>{ledger.lock();setLockUI();closeModal();toast('已锁定');resolve();};return;}
-    openModal('<h3>请签名</h3><input class="inp" type="password" id="pp" placeholder="你的口令"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">签名</button></div>');$('#pp').focus();$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{if(await ledger.unlock($('#pp').value)){setLockUI();closeModal();toast('已解锁 '+ledger.fp);}else{toast('口令不对');}resolve();};
+    openModal('<h3>请签名</h3><input class="inp" type="password" id="pp" placeholder="你的口令"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">签名</button></div>');$('#pp').focus();$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{const pw=$('#pp').value;if(await ledger.unlock(pw)){setLockUI();closeModal();toast('已解锁 '+ledger.fp);cloudSyncAfterUnlock(pw);}else{toast('口令不对');}resolve();};
   });
 }
 $('#btnLock').onclick=()=>openLock();
@@ -283,7 +317,7 @@ $('#btnShare').onclick=()=>{
 
 /* ---------- footer / help ---------- */
 $('#foot').innerHTML='<a id="helpL" style="opacity:.7">玩法说明</a>';
-document.addEventListener('click',e=>{if(e.target&&e.target.id==='helpL'){openModal('<h3>玩法 & 安全说明</h3><p>① 全美地图上每个州有名字、吉祥物，公园是灰色 emoji；<br>② 点一个州放大进入州视角；<br>③ 设一个口令生成你的「印章」；<br>④ 用<b>手指在公园徽章上刮</b>，灰色慢慢变彩色，刮够一半即完成打卡；<br>⑤ 右上「分享」生成带签名的链接发给朋友。</p><p style="color:#8fb3b0">安全：每次打卡用从口令派生的私钥做 ECDSA 签名，验证用公钥；别人改了本地数据或链接，签名一对就失效、标红「异常」。这是浏览器端防篡改，知道口令的人仍可签名，请保管好口令。</p><div class="mbtns"><button class="pri" id="ok">明白了</button></div>');$('#ok').onclick=closeModal;}});
+document.addEventListener('click',e=>{if(e.target&&e.target.id==='helpL'){openModal('<h3>玩法 & 安全说明</h3><p>① 全美地图上每个州有名字、吉祥物，公园是灰色 emoji；<br>② 点一个州放大进入州视角；<br>③ 设一个口令生成你的「印章」；<br>④ 用<b>手指在公园徽章上刮</b>，灰色慢慢变彩色，刮够一半即完成打卡；<br>⑤ 右上「分享」生成带签名的链接发给朋友。</p>'+(CLOUD?'<p>☁️ 打卡自动云存档：换设备打开，输同一口令即恢复整本图鉴。</p>':'')+'<p style="color:#8fb3b0">安全：每次打卡用从口令派生的私钥做 ECDSA 签名，验证用公钥；别人改了本地数据或链接，签名一对就失效、标红「异常」。云存档整包加密后才上传，仓库里看不到内容。知道口令的人仍可打卡和恢复，请保管好口令。</p><div class="mbtns"><button class="pri" id="ok">明白了</button></div>');$('#ok').onclick=closeModal;}});
 
 /* ---------- banner ---------- */
 function renderBanner(){const b=$('#banner');b.className='banner';const tamper=PARKS.some(p=>isTamper(p.id));if(SHARE){b.classList.add('show','ro');b.innerHTML='👁 只读分享卡片 · 编号 '+ledger.fp+(tamper?' · ⚠ 含异常记录':'');}else if(tamper){b.classList.add('show','tamper');b.textContent='⚠ 有打卡记录签名验证失败，可能被改动过（已标红，不计入进度）。';}}

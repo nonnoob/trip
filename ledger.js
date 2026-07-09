@@ -1,7 +1,8 @@
 /* Ledger — 签名打卡账本（ECDSA P-256 签名 + 口令派生 AES-GCM 锁私钥）
    接口：Ledger.create({storage,subtle,today}) → load/setup/unlock/lock/checkIn/remove/
          isVisited/isTamper/record/shareFragment + readonly/hasIdentity/unlocked/fp/supported
-   存储格式（np_v1）与 #share= 编码必须保持不变：老数据与已分享链接依赖它。 */
+       云存档（ADR-0010）：cloudId(pass)/exportCloud()/importCloud(pass,bundle)/mergeCloud(bundle)
+   存储格式（np_v1）、#share= 编码、云存档 bundle 格式必须保持不变：老数据与已上传存档依赖它们。 */
 (function(root){
 "use strict";
 const enc=new TextEncoder(), dec=new TextDecoder();
@@ -14,6 +15,8 @@ function b64urlToStr(b){b=b.replace(/-/g,'+').replace(/_/g,'/');while(b.length%4
 
 /* ---------- crypto ---------- */
 function deriveAes(subtle,pass,saltBytes){return subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']).then(base=>subtle.deriveKey({name:'PBKDF2',salt:saltBytes,iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']));}
+/* 云存档查找键：只由口令派生（固定盐），任何设备同口令算出同一 ID */
+async function cloudIdOf(subtle,pass){const base=await subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveBits']);const bits=await subtle.deriveBits({name:'PBKDF2',salt:enc.encode('np-cloud-v1'),iterations:150000,hash:'SHA-256'},base,128);const b=new Uint8Array(bits);let s='';for(let i=0;i<b.length;i++)s+=b[i].toString(16).padStart(2,'0');return s;}
 async function fingerprint(subtle,jwk){const h=await subtle.digest('SHA-256',enc.encode(jwk.x+'.'+jwk.y));const b=new Uint8Array(h);const A='0123456789ABCDEFGHJKMNPQRSTVWXYZ';let out='';for(let i=0;i<6;i++)out+=A[b[i]%32];return 'NP-'+out.slice(0,3)+'-'+out.slice(3);}
 function msgOf(id,date,note){return enc.encode(id+'|'+date+'|'+(note||''));}
 
@@ -25,13 +28,14 @@ function create(opts){
   const todayFn=opts.today||function(){const d=new Date();const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());};
 
   let S={idn:null,recs:{}}, VALID={}, PUB=null, PRIV=null, share=false;
+  let CKEY=null, CID=null; /* 解锁时缓存：云存档加密钥（同口令派生）与查找键 */
 
   function persist(){if(!share&&storage)storage.save(S);}
   async function importPub(jwk){return subtle.importKey('jwk',jwk,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);}
   async function verifyRec(id,r){try{return await subtle.verify({name:'ECDSA',hash:'SHA-256'},PUB,b64ToBytes(r.s),msgOf(id,r.d,r.n));}catch(e){return false;}}
   async function verifyAll(){VALID={};PUB=null;if(!S.idn||!S.idn.pub)return;PUB=await importPub(S.idn.pub);for(const id in S.recs)VALID[id]=await verifyRec(id,S.recs[id]);}
 
-  return {
+  const api={
     get supported(){return !!subtle;},
     get readonly(){return share;},
     get hasIdentity(){return !!S.idn;},
@@ -56,6 +60,7 @@ function create(opts){
       const ct=await subtle.encrypt({name:'AES-GCM',iv},aes,priv);
       S.idn={salt:abToB64(salt),iv:abToB64(iv),enc:abToB64(ct),pub,fp:await fingerprint(subtle,pub)};
       PRIV=kp.privateKey;
+      CKEY=aes;CID=await cloudIdOf(subtle,pass);
       PUB=await importPub(pub);persist();return S.idn.fp;
     },
 
@@ -65,10 +70,11 @@ function create(opts){
         const aes=await deriveAes(subtle,pass,b64ToBytes(S.idn.salt));
         const pkcs8=await subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(S.idn.iv)},aes,b64ToBytes(S.idn.enc));
         PRIV=await subtle.importKey('pkcs8',pkcs8,{name:'ECDSA',namedCurve:'P-256'},false,['sign']);
+        CKEY=aes;CID=await cloudIdOf(subtle,pass);
         return true;
       }catch(e){return false;}
     },
-    lock(){PRIV=null;},
+    lock(){PRIV=null;CKEY=null;CID=null;},
 
     /* 打卡：需已解锁。签名 id|date|note，写入并持久化 */
     async checkIn(id,note){
@@ -87,8 +93,51 @@ function create(opts){
     shareFragment(){
       const recs={};for(const id in S.recs){if(VALID[id])recs[id]=S.recs[id];}
       return 'share='+strToB64url(JSON.stringify({v:1,pub:S.idn.pub,fp:S.idn.fp,recs:recs}));
+    },
+
+    /* ---------- 云存档（ADR-0010） ---------- */
+    async cloudId(pass){return cloudIdOf(subtle,pass);},
+
+    /* 导出：整包（身份+记录）AES-GCM 加密，再对密文 ECDSA 签名——仓库里不裸奔，无口令者改不动 */
+    async exportCloud(){
+      if(!PRIV||!CKEY||!CID)throw new Error('locked');
+      const iv=cryptoObj.getRandomValues(new Uint8Array(12));
+      const ct=await subtle.encrypt({name:'AES-GCM',iv},CKEY,enc.encode(JSON.stringify(S)));
+      const sig=await subtle.sign({name:'ECDSA',hash:'SHA-256'},PRIV,ct);
+      return {v:1,id:CID,fp:S.idn.fp,pub:{kty:'EC',crv:'P-256',x:S.idn.pub.x,y:S.idn.pub.y},salt:S.idn.salt,iv:abToB64(iv),ct:abToB64(ct),sig:abToB64(sig)};
+    },
+
+    /* 恢复：新设备只凭口令。解不开/结构不对返回 false，成功返回编号并处于解锁态 */
+    async importCloud(pass,bundle){
+      try{
+        const aes=await deriveAes(subtle,pass,b64ToBytes(bundle.salt));
+        const buf=await subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(bundle.iv)},aes,b64ToBytes(bundle.ct));
+        const data=JSON.parse(dec.decode(buf));
+        if(!data||!data.idn||!data.idn.pub)return false;
+        S={idn:data.idn,recs:data.recs||{}};
+        await verifyAll();persist();
+        if(!await api.unlock(pass))return false;
+        return S.idn.fp;
+      }catch(e){return false;}
+    },
+
+    /* 合并（多设备）：同一身份的云存档里，本地缺的记录收进来。
+       返回 {added,extra}；身份不同或解不开返回 null。extra=本地有而云端没有的条数（>0 该回传） */
+    async mergeCloud(bundle){
+      if(!CKEY||!S.idn)return null;
+      if(!bundle||!bundle.pub||bundle.pub.x!==S.idn.pub.x||bundle.pub.y!==S.idn.pub.y)return null;
+      try{
+        const buf=await subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(bundle.iv)},CKEY,b64ToBytes(bundle.ct));
+        const data=JSON.parse(dec.decode(buf));
+        const crecs=(data&&data.recs)||{};let added=0,extra=0;
+        for(const id in crecs){if(!S.recs[id]){S.recs[id]=crecs[id];VALID[id]=await verifyRec(id,S.recs[id]);added++;}}
+        for(const id in S.recs){if(!crecs[id])extra++;}
+        if(added)persist();
+        return {added:added,extra:extra};
+      }catch(e){return null;}
     }
   };
+  return api;
 }
 root.Ledger={create:create};
 })(typeof window!=='undefined'?window:globalThis);
