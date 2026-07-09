@@ -43,6 +43,35 @@ async function cloudSyncAfterUnlock(pass){
   }catch(e){}
 }
 function refreshAll(){paintNational();renderProgress();renderBanner();if(MODE==='state'&&curState)enterState(curState);}
+
+/* ---------- 入口（口令在主页或进入时输一次，游戏内不再出现口令） ---------- */
+async function enterWithPass(pass){
+  if(!pass)return false;
+  if(ledger.hasIdentity){
+    if(await ledger.unlock(pass)){cloudSyncAfterUnlock(pass);return true;}
+    return false; /* 本机已有图鉴，口令不符不替换，防误清未上云记录 */
+  }
+  if(CLOUD){try{const b=await cloudGet(await ledger.cloudId(pass));if(b){const fp=await ledger.importCloud(pass,b);if(fp){refreshAll();toast('已恢复 · '+fp);return true;}return false;}}catch(e){}}
+  await ledger.setup(pass);schedulePush();return true;
+}
+function gateModal(msg){
+  return new Promise(resolve=>{
+    openModal('<h3>口令</h3>'+(msg?'<p>'+msg+'</p>':'')+'<input class="inp" type="password" id="gp" autocomplete="off"><div class="mbtns"><button id="gc">取消</button><button class="pri" id="go">进入</button></div>');
+    const inp=$('#gp');inp.focus();
+    $('#gc').onclick=()=>{closeModal();resolve(false);};
+    const go=async()=>{const v=inp.value;if(v.length<4)return toast('口令至少 4 位');$('#go').disabled=true;
+      if(await enterWithPass(v)){try{sessionStorage.setItem('np_pass',v);}catch(e){}closeModal();resolve(true);}
+      else{$('#go').disabled=false;toast('口令不对');}};
+    $('#go').onclick=go;inp.onkeydown=e=>{if(e.key==='Enter')go();};
+  });
+}
+async function gate(){
+  if(SHARE||!ledger.supported)return;
+  let pass=null;try{pass=sessionStorage.getItem('np_pass');}catch(e){}
+  if(pass&&await enterWithPass(pass))return;
+  if(pass)try{sessionStorage.removeItem('np_pass');}catch(e){}
+  await gateModal(pass?'口令不对，请重输':null);
+}
 const isVisited=id=>ledger.isVisited(id);
 const isTamper=id=>ledger.isTamper(id);
 const visitedCount=()=>PARKS.reduce((n,p)=>n+(isVisited(p.id)?1:0),0);
@@ -226,14 +255,13 @@ function openInfo(p,fromList){
   if(vis)h+='<span class="pill done">✓ 已打卡 · '+rec.d+'</span>';if(tam)h+='<span class="pill tamper">⚠ 签名异常</span>';h+='</div>';
   h+='<div class="intro">'+p.intro+'</div><div class="hl">✨ 亮点：<b>'+p.hl+'</b></div>';
   h+='<div class="stampbox">';
-  if(SHARE){h+='<div class="hint">🔗 只读分享卡片，不能在此打卡。</div>';}
+  if(SHARE){h+='<div class="hint">👁 只读</div>';}
   else if(p._terr){ // territory parks check in here (no state view)
     if(vis){h+='<button class="holdbtn danger" id="holdRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';}
-    else{h+='<button class="holdbtn" id="holdStamp"><span class="prog2"></span><span class="lab">长按盖章打卡 🅿️</span></button><div class="hint">'+(ledger.unlocked?'按住盖章':'按住时会要求口令')+'</div>';}
+    else{h+='<button class="holdbtn" id="holdStamp"><span class="prog2"></span><span class="lab">长按盖章打卡 🅿️</span></button>';}
   }
-  else if(vis){h+='<div class="hint">已点亮。想取消？长按下面。</div><button class="holdbtn danger" id="holdRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';}
+  else if(vis){h+='<button class="holdbtn danger" id="holdRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';}
   else if(fromList){h+='<button class="holdbtn" id="holdStamp"><span class="prog2"></span><span class="lab">长按盖章打卡 🅿️</span></button>';}
-  else{h+='<div class="hint">长按徽章（约半秒）再刮开即可打卡 ✨</div>';}
   h+='</div>';
   sh.innerHTML=h;$('#scrim').classList.add('show');sh.classList.add('show');fixSheetZoom();
   const hs=$('#holdStamp');if(hs)bindHold(hs,()=>doStamp(p));
@@ -262,7 +290,6 @@ function showCallout(p){
   if(SHARE)h+='<span style="color:var(--muted)">👁 只读</span>'+(vis?' · <span style="color:var(--ok)">✓ '+rec.d+'</span>':'');
   else if(tam)h+='<span style="color:var(--bad)">⚠ 签名异常（已改动）</span>';
   else if(vis)h+='<span style="color:var(--ok)">✓ 已点亮 · '+rec.d+'</span><button class="holdbtn danger" id="cRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';
-  else h+='<span style="color:var(--muted)">长按徽章（约半秒）再刮开即可打卡 ✨</span>';
   h+='</div>';c.innerHTML=h;stage.appendChild(c);
   const cw=c.offsetWidth,ch=c.offsetHeight;
   let left=fx+fr.width/2+12,side='r';
@@ -283,41 +310,27 @@ function bindHold(btn,onDone){let raf=null,start=0,done=false;const bar=btn.quer
 async function doStamp(p){if(SHARE)return;if(!await ensurePriv())return;await ledger.checkIn(p.id);schedulePush();paintNational();renderProgress();closeSheet();stampAnim();toast('已点亮 · '+p.zh);}
 async function doRemove(p){if(SHARE)return;if(!await ensurePriv())return;ledger.remove(p.id);schedulePush();paintNational();renderProgress();closeSheet();toast('已取消打卡');if(MODE==='state'&&p._state)enterState(p._state);}
 
-/* ---------- unlock helpers ---------- */
-async function ensurePriv(){if(ledger.unlocked)return true;if(!ledger.hasIdentity){await openLock();return ledger.unlocked;}const pass=await askPass('请签名','你的口令');if(pass===null)return false;if(await ledger.unlock(pass)){setLockUI();cloudSyncAfterUnlock(pass);return true;}toast('口令不对');return false;}
+/* ---------- unlock helpers ----------
+   入口闸门保证进来即解锁；未过闸（取消）只能浏览，打卡静默不生效 */
+async function ensurePriv(){return ledger.unlocked;}
 function stampAnim(){const s=el('div','stamp-anim');s.textContent='VISITED';document.body.appendChild(s);requestAnimationFrame(()=>s.classList.add('go'));setTimeout(()=>s.remove(),1000);}
 
 /* ---------- modal ---------- */
 function openModal(html){const m=$('#modal');$('#mcard').innerHTML=html;m.classList.add('show');fixModalZoom();return m;}
 function closeModal(){$('#modal').classList.remove('show');fixModalZoom();}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
-function askPass(title,ph){return new Promise(res=>{openModal('<h3>'+title+'</h3><input class="inp" type="password" id="pp" placeholder="'+(ph||'口令')+'" autocomplete="off"><div class="mbtns"><button id="pc">取消</button><button class="pri" id="po">确定</button></div>');const inp=$('#pp');inp.focus();const done=v=>{closeModal();res(v);};$('#po').onclick=()=>done(inp.value||'');$('#pc').onclick=()=>done(null);inp.onkeydown=e=>{if(e.key==='Enter')done(inp.value||'');};});}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800);}
-function setLockUI(){const b=$('#btnLock');if(SHARE){b.textContent='👁';return;}b.textContent=!ledger.hasIdentity?'🔑':(ledger.unlocked?'🔓':'🔒');}
-function openLock(){
-  return new Promise(resolve=>{
-    if(SHARE){openModal('<h3>只读分享卡片</h3><p>你在看一张被加密签名保护的分享卡片，无法打卡或修改。卡片编号 <span class="fp">'+ledger.fp+'</span>。</p><p>想要自己的图鉴？去掉网址里 # 后面的内容重新打开即可。</p><div class="mbtns"><button class="pri" id="ok">好的</button></div>');$('#ok').onclick=()=>{closeModal();resolve();};return;}
-    if(!ledger.hasIdentity){openModal('<h3>请签名</h3><p>首次使用：设置一个口令作为你的签名，<b>无法找回</b>，请记牢。'+(CLOUD?'已有图鉴？输入原口令自动恢复。':'')+'</p><input class="inp" type="password" id="p1" placeholder="设置口令"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">签名</button></div>');const p1=$('#p1');p1.focus();p1.onkeydown=e=>{if(e.key==='Enter')$('#o').click();};$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{const a=p1.value;if(a.length<4)return toast('口令至少 4 位');const btn=$('#o');btn.textContent='签名中…';btn.disabled=true;
-      /* 先查云端：这个口令若已有存档就恢复，没有才新建（口令↔图鉴一一对应） */
-      if(CLOUD){try{const b=await cloudGet(await ledger.cloudId(a));if(b){const fp=await ledger.importCloud(a,b);if(fp){closeModal();setLockUI();refreshAll();toast('已恢复图鉴 · '+fp);resolve();return;}btn.textContent='签名';btn.disabled=false;return toast('找到存档但口令解不开，请重试');}}catch(e){}}
-      const fp=await ledger.setup(a);schedulePush();closeModal();setLockUI();toast('已签名 · 印章 '+fp);resolve();};return;}
-    if(ledger.unlocked){openModal('<h3>已解锁 🔓</h3><p>卡片编号 <span class="fp">'+ledger.fp+'</span>，可以打卡。</p><div class="mbtns"><button id="lock">锁定</button><button class="pri" id="ok">完成</button></div>');$('#ok').onclick=()=>{closeModal();resolve();};$('#lock').onclick=()=>{ledger.lock();setLockUI();closeModal();toast('已锁定');resolve();};return;}
-    openModal('<h3>请签名</h3><input class="inp" type="password" id="pp" placeholder="你的口令"><div class="mbtns"><button id="c">取消</button><button class="pri" id="o">签名</button></div>');$('#pp').focus();$('#c').onclick=()=>{closeModal();resolve();};$('#o').onclick=async()=>{const pw=$('#pp').value;if(await ledger.unlock(pw)){setLockUI();closeModal();toast('已解锁 '+ledger.fp);cloudSyncAfterUnlock(pw);}else{toast('口令不对');}resolve();};
-  });
-}
-$('#btnLock').onclick=()=>openLock();
-
 /* ---------- share ---------- */
 $('#btnShare').onclick=()=>{
-  if(!ledger.hasIdentity)return openModal('<h3>还没有可分享的卡片</h3><p>先点右上角 🔑 设置口令并打卡。</p><div class="mbtns"><button class="pri" id="ok">好的</button></div>'),void($('#ok').onclick=closeModal);
+  if(!ledger.hasIdentity)return openModal('<h3>分享</h3><p>先打一张卡。</p><div class="mbtns"><button class="pri" id="ok">好的</button></div>'),void($('#ok').onclick=closeModal);
   const link=location.origin+location.pathname+'#'+ledger.shareFragment();
-  openModal('<h3>分享我的图鉴</h3><p>链接带着你的<b>公钥与签名</b>：朋友能看你点亮了哪些并验证真伪，但<b>改不了、伪造不了</b>。卡片编号 <span class="fp">'+ledger.fp+'</span>。</p><div class="share-out" id="so">'+link+'</div><div class="mbtns"><button id="c">关闭</button><button class="pri" id="cp">复制链接</button></div>');
+  openModal('<h3>分享图鉴</h3><p>只读链接：朋友可看、可验真，改不了。</p><div class="share-out" id="so">'+link+'</div><div class="mbtns"><button id="c">关闭</button><button class="pri" id="cp">复制链接</button></div>');
   $('#c').onclick=closeModal;$('#cp').onclick=async()=>{try{await navigator.clipboard.writeText(link);toast('已复制');}catch(e){const r=document.createRange();r.selectNodeContents($('#so'));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);toast('已选中，长按复制');}};
 };
 
 /* ---------- footer / help ---------- */
 $('#foot').innerHTML='<a id="helpL" style="opacity:.7">玩法说明</a>';
-document.addEventListener('click',e=>{if(e.target&&e.target.id==='helpL'){openModal('<h3>玩法 & 安全说明</h3><p>① 全美地图上每个州有名字、吉祥物，公园是灰色 emoji；<br>② 点一个州放大进入州视角；<br>③ 设一个口令生成你的「印章」；<br>④ 用<b>手指在公园徽章上刮</b>，灰色慢慢变彩色，刮够一半即完成打卡；<br>⑤ 右上「分享」生成带签名的链接发给朋友。</p>'+(CLOUD?'<p>☁️ 打卡自动云存档：换设备打开，输同一口令即恢复整本图鉴。</p>':'')+'<p style="color:#8fb3b0">安全：每次打卡用从口令派生的私钥做 ECDSA 签名，验证用公钥；别人改了本地数据或链接，签名一对就失效、标红「异常」。云存档整包加密后才上传，仓库里看不到内容。知道口令的人仍可打卡和恢复，请保管好口令。</p><div class="mbtns"><button class="pri" id="ok">明白了</button></div>');$('#ok').onclick=closeModal;}});
+document.addEventListener('click',e=>{if(e.target&&e.target.id==='helpL'){openModal('<h3>玩法</h3><p>① 点一个州进入；<br>② 长按公园徽章半秒，手指刮开即打卡；<br>③ 「分享」生成只读链接。</p><p style="color:#8fb3b0">打卡自动云存档；记录带签名，改动会标红「异常」。</p><div class="mbtns"><button class="pri" id="ok">明白了</button></div>');$('#ok').onclick=closeModal;}});
 
 /* ---------- banner ---------- */
 function renderBanner(){const b=$('#banner');b.className='banner';const tamper=PARKS.some(p=>isTamper(p.id));if(SHARE){b.classList.add('show','ro');b.innerHTML='👁 只读分享卡片 · 编号 '+ledger.fp+(tamper?' · ⚠ 含异常记录':'');}else if(tamper){b.classList.add('show','tamper');b.textContent='⚠ 有打卡记录签名验证失败，可能被改动过（已标红，不计入进度）。';}}
@@ -326,11 +339,12 @@ function renderBanner(){const b=$('#banner');b.className='banner';const tamper=P
 async function init(){
   if(!ledger.supported){$('#banner').className='banner show tamper';$('#banner').textContent='当前环境不支持 Web Crypto（请用 https 打开）。';}
   SHARE=(await ledger.load(location.hash))==='share';
-  setLockUI();renderBanner();renderProgress();renderRegions();
+  renderBanner();renderProgress();renderRegions();
   setMode('nation');
   await buildNational();
   renderProgress();
   routeHash();
+  await gate();
 }
 init();
 })();

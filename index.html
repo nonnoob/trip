@@ -603,6 +603,22 @@ function route(){const h=location.hash||'#/';
   else if(h==='#/guide')renderGuide();else if(h==='#/overview')renderOverview();else if(h==='#/lists')renderLists();else renderHome();
   const isDetail=h.startsWith('#/s/')||h.startsWith('#/r/');const y=isDetail?0:(SCROLL[h]||0);curHash=h;window.scrollTo(0,y);requestAnimationFrame(function(){requestAnimationFrame(function(){window.scrollTo(0,y);});});}
 window.addEventListener('hashchange',route);route();
+/* 公园打卡入口：先输口令再进。口令放本标签页 sessionStorage，parks.html 读取后静默解锁，游戏内不再出现口令 */
+document.addEventListener('click',e=>{
+  const a=e.target.closest('a[href="parks.html"]');if(!a)return;e.preventDefault();
+  let ov=document.getElementById('npGate');
+  if(!ov){ov=document.createElement('div');ov.id='npGate';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99';
+    ov.innerHTML='<div style="background:#fff;border-radius:16px;padding:20px 18px;width:260px;box-shadow:0 12px 40px rgba(0,0,0,.25)"><div style="font-weight:800;margin-bottom:10px">🏞️ 口令</div><input id="npGp" type="password" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #d4dbd9;border-radius:10px;font-size:15px"><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button id="npGc" style="padding:8px 14px;border:1px solid #d4dbd9;background:#fff;border-radius:10px">取消</button><button id="npGo" style="padding:8px 14px;border:0;background:#0e7490;color:#fff;border-radius:10px;font-weight:700">进入</button></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click',ev=>{if(ev.target===ov)ov.style.display='none';});
+    const go=()=>{const v=document.getElementById('npGp').value;if(v.length<4)return;try{sessionStorage.setItem('np_pass',v);}catch(e2){}location.href='parks.html';};
+    document.getElementById('npGo').onclick=go;
+    document.getElementById('npGc').onclick=()=>{ov.style.display='none';};
+    document.getElementById('npGp').addEventListener('keydown',ev=>{if(ev.key==='Enter')go();});
+  }
+  ov.style.display='flex';const inp=document.getElementById('npGp');inp.value='';setTimeout(()=>inp.focus(),50);
+});
 try{const mf={name:'我们的旅行',short_name:'我们的旅行',start_url:'.',display:'standalone',background_color:'#f4f5f3',theme_color:'#0e7490',icons:[{src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" rx="96" fill="#0e7490"/><text x="50%" y="54%" font-size="300" text-anchor="middle" dominant-baseline="middle">🧳</text></svg>'),sizes:'512x512',type:'image/svg+xml'}]};const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));document.head.appendChild(l);}catch(e){}
 if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>

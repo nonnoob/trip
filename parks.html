@@ -154,9 +154,6 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .sv-callout .holdbtn{padding:9px;font-size:13px;margin-top:9px;letter-spacing:0}
 .sv-cline{position:absolute;left:0;top:0;pointer-events:none;z-index:19;overflow:visible}
 .fig-canvas.armed,.med-canvas.armed{box-shadow:0 0 0 2px var(--gold) inset,0 0 10px rgba(231,192,106,.6)}
-/* map card caption */
-.mapcap{text-align:center;font-size:12px;font-weight:800;color:var(--gold);letter-spacing:1px;padding:10px 10px 0}
-.mapcap span{display:block;font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.5px;margin-top:3px}
 /* ===== phone layout ===== */
 @media (max-width:640px){
   header.bar{gap:7px;padding:9px 11px}
@@ -170,7 +167,6 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
   #nationalView .mapwrap{margin:8px;display:flex;flex-direction:column;min-height:calc(100dvh - 212px);background:radial-gradient(125% 78% at 50% 30%,#123b50 0%,#0b1f2b 76%)}
   #nationalView #mapHost{flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-height:0}
   #nationalView #mapHost svg{width:100%;height:auto;display:block}
-  .mapcap{padding:12px 10px 2px}
   .legend{padding:6px 10px 12px}
   .ab{font-size:17px;stroke-width:3px}
   .pmark{font-size:22px}
@@ -188,7 +184,6 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
   <div class="spacer"></div>
   <button class="iconbtn" id="btnSound">🔊</button>
   <button class="iconbtn" id="btnShare">分享</button>
-  <button class="iconbtn gold" id="btnLock">🔒</button>
 </header>
 
 <div id="banner" class="banner"></div>
@@ -203,12 +198,10 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 
 <div id="nationalView">
   <div class="mapwrap">
-    <div class="mapcap">✦ 刮开你的国家公园地图 ✦<span>点一个州 → 进入刮奖</span></div>
     <div id="mapHost"></div>
     <div class="legend">
-      <span><i style="background:var(--foil)"></i>灰色 = 未点亮</span>
+      <span><i style="background:var(--foil)"></i>未点亮</span>
       <span><i style="background:var(--gold)"></i>已点亮</span>
-      <span>点州进入 →</span>
     </div>
   </div>
 </div>
@@ -316,7 +309,7 @@ window.PARKS=PARKS;window.REGIONS=REGIONS;window.TIERS=TIERS;
 <script src="park-bounds.js?v=1"></script>
 <script src="ledger.js?v=2"></script>
 <script src="scratchable.js?v=1"></script>
-<script src="app-parks.js?v=26"></script>
+<script src="app-parks.js?v=27"></script>
 <script>if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 </body>
 </html>
