@@ -179,7 +179,7 @@ function enterState(name){
   const stage=el('div','sv-stage');host.appendChild(stage);
   stage.addEventListener('click',function(e){if(!e.target.closest('.sv-callout,.medallion'))closeCallout();});
   setMode('state');window.scrollTo(0,0);
-  curState=name;if(!SHARE){const ab=(NAME2STATE[name]&&NAME2STATE[name].ab)||name;const h='#st='+encodeURIComponent(ab);if(location.hash!==h)history.replaceState(null,'',h);}
+  curState=name;if(!SHARE){const ab=(NAME2STATE[name]&&NAME2STATE[name].ab)||name;const h='#st='+encodeURIComponent(ab);if(location.hash!==h)history.pushState(null,'',h);}
   if(!ps.length){stage.innerHTML='<div class="sv-emptly"><div class="big2">'+(st?st.m:'🗺️')+'</div><div style="margin-top:8px">'+(st?st.zh:name)+'目前还没有国家公园</div><div style="font-size:12px;margin-top:4px">换个州试试 →</div></div>';return;}
   // measure then render backdrop + medallions
   setTimeout(()=>{
