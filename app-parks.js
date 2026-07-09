@@ -2,21 +2,23 @@
 (function(){
 "use strict";
 const PARKS=window.PARKS, REGIONS=window.REGIONS, TIERS=window.TIERS, STATES=window.STATES, PSF=window.PARK_STATE_FALLBACK||{};
-const LS='np_v1';
 const $=s=>document.querySelector(s);
 const el=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e;};
 
-/* ---------- ledger（签名打卡账本，实现见 ledger.js） ---------- */
+/* ---------- ledger（签名打卡账本，实现见 ledger.js） ----------
+   多口令多图鉴：每个口令一本，存储槽 np_v1:<口令派生键>。LSKEY 在入口解析口令后指向当前图鉴；
+   旧单槽 np_v1 在口令首次匹配时自动迁移到新槽 */
+let LSKEY=null;
 const ledger=window.Ledger.create({storage:{
-  load(){try{return JSON.parse(localStorage.getItem(LS));}catch(e){return null;}},
-  save(o){try{localStorage.setItem(LS,JSON.stringify(o));}catch(e){}}
+  load(){try{return LSKEY?JSON.parse(localStorage.getItem(LSKEY)):null;}catch(e){return null;}},
+  save(o){try{if(LSKEY)localStorage.setItem(LSKEY,JSON.stringify(o));}catch(e){}}
 }});
 let SHARE=false, curRegion=null, MODE='nation', curState=null;
 
 /* ---------- 云存档（Cloudflare Worker 中转，ADR-0010） ----------
    打卡后自动把加密存档推到 GitHub 仓库；任何设备输口令即恢复。CLOUD 为空则整套静默关闭 */
 const CLOUD='https://muddy-poetry-dea4.jacec2096.workers.dev';
-const DIRTY='np_dirty';
+const dirtyKey=()=>LSKEY?'np_dirty:'+LSKEY.slice(6):'np_dirty';
 async function cloudGet(id){const r=await fetch(CLOUD+'/atlas?id='+id,{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error('load '+r.status);return r.json();}
 let pushT=null;
 function schedulePush(){if(!CLOUD||SHARE)return;clearTimeout(pushT);pushT=setTimeout(cloudPush,1200);}
@@ -25,10 +27,10 @@ async function cloudPush(){
   try{
     const b=await ledger.exportCloud();
     const r=await fetch(CLOUD+'/atlas',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});
-    if(r.status===409){localStorage.removeItem(DIRTY);toast('该口令已绑定另一份图鉴，云存档未更新');return;}
+    if(r.status===409){localStorage.removeItem(dirtyKey());toast('该口令已绑定另一份图鉴，云存档未更新');return;}
     if(!r.ok)throw new Error(r.status);
-    localStorage.removeItem(DIRTY);
-  }catch(e){localStorage.setItem(DIRTY,'1');toast('云同步失败，下次打卡自动重试');}
+    localStorage.removeItem(dirtyKey());
+  }catch(e){localStorage.setItem(dirtyKey(),'1');toast('云同步失败，下次打卡自动重试');}
 }
 /* 解锁后对账：云端缺的回传、本地缺的收进来 */
 async function cloudSyncAfterUnlock(pass){
@@ -39,38 +41,65 @@ async function cloudSyncAfterUnlock(pass){
     const m=await ledger.mergeCloud(b);
     if(!m){toast('该口令已绑定另一份图鉴，云同步停用');return;}
     if(m.added){refreshAll();toast('已从云端同步 '+m.added+' 条打卡');}
-    if(m.extra||localStorage.getItem(DIRTY))schedulePush();
+    if(m.extra||localStorage.getItem(dirtyKey()))schedulePush();
   }catch(e){}
 }
 function refreshAll(){paintNational();renderProgress();renderBanner();if(MODE==='state'&&curState)enterState(curState);}
 
-/* ---------- 入口（口令在主页或进入时输一次，游戏内不再出现口令） ---------- */
+/* ---------- 入口（口令在主页或进入时输一次，游戏内不再出现口令） ----------
+   多口令多图鉴：口令→派生键→切到对应存储槽。本地有→解锁；旧单槽能解→迁移；
+   云端有→恢复；都没有→'new'（确认后才建，防手滑口令悄悄开新本） */
 async function enterWithPass(pass){
   if(!pass)return false;
+  const id=await ledger.cloudId(pass);
+  LSKEY='np_v1:'+id;await ledger.load('');
   if(ledger.hasIdentity){
-    if(await ledger.unlock(pass)){cloudSyncAfterUnlock(pass);return true;}
-    return false; /* 本机已有图鉴，口令不符不替换，防误清未上云记录 */
+    if(await ledger.unlock(pass)){refreshAll();cloudSyncAfterUnlock(pass);return true;}
+    return false;
   }
-  if(CLOUD){try{const b=await cloudGet(await ledger.cloudId(pass));if(b){const fp=await ledger.importCloud(pass,b);if(fp){refreshAll();toast('已恢复 · '+fp);return true;}return false;}}catch(e){}}
-  await ledger.setup(pass);schedulePush();return true;
+  /* 旧单槽迁移：老 np_v1 若能用此口令解开，原地搬进新槽 */
+  const legacy=localStorage.getItem('np_v1');
+  if(legacy){
+    LSKEY='np_v1';await ledger.load('');
+    if(ledger.hasIdentity&&await ledger.unlock(pass)){
+      LSKEY='np_v1:'+id;try{localStorage.setItem(LSKEY,legacy);localStorage.removeItem('np_v1');}catch(e){}
+      refreshAll();cloudSyncAfterUnlock(pass);return true;
+    }
+    LSKEY='np_v1:'+id;await ledger.load('');
+  }
+  if(CLOUD){try{const b=await cloudGet(id);if(b){const fp=await ledger.importCloud(pass,b);if(fp){refreshAll();toast('已恢复 · '+fp);return true;}return false;}}catch(e){}}
+  return 'new';
 }
-function gateModal(msg){
+async function createAtlas(pass){await ledger.setup(pass);refreshAll();schedulePush();}
+function askGate(msg){
   return new Promise(resolve=>{
     openModal('<h3>口令</h3>'+(msg?'<p>'+msg+'</p>':'')+'<input class="inp" type="password" id="gp" autocomplete="off"><div class="mbtns"><button id="gc">取消</button><button class="pri" id="go">进入</button></div>');
     const inp=$('#gp');inp.focus();
-    $('#gc').onclick=()=>{closeModal();resolve(false);};
-    const go=async()=>{const v=inp.value;if(v.length<4)return toast('口令至少 4 位');$('#go').disabled=true;
-      if(await enterWithPass(v)){try{sessionStorage.setItem('np_pass',v);}catch(e){}closeModal();resolve(true);}
-      else{$('#go').disabled=false;toast('口令不对');}};
+    $('#gc').onclick=()=>{closeModal();resolve(null);};
+    const go=()=>{const v=inp.value;if(v.length<4)return toast('口令至少 4 位');closeModal();resolve(v);};
     $('#go').onclick=go;inp.onkeydown=e=>{if(e.key==='Enter')go();};
+  });
+}
+function confirmNew(){
+  return new Promise(resolve=>{
+    openModal('<h3>新口令</h3><p>用它开一本新图鉴？</p><div class="mbtns"><button id="nc">返回</button><button class="pri" id="no">开新图鉴</button></div>');
+    $('#nc').onclick=()=>{closeModal();resolve(false);};
+    $('#no').onclick=()=>{closeModal();resolve(true);};
   });
 }
 async function gate(){
   if(SHARE||!ledger.supported)return;
   let pass=null;try{pass=sessionStorage.getItem('np_pass');}catch(e){}
-  if(pass&&await enterWithPass(pass))return;
-  if(pass)try{sessionStorage.removeItem('np_pass');}catch(e){}
-  await gateModal(pass?'口令不对，请重输':null);
+  let msg=null;
+  while(true){
+    if(!pass){pass=await askGate(msg);if(pass===null)return;}
+    const r=await enterWithPass(pass);
+    if(r===true)break;
+    if(r==='new'&&await confirmNew()){await createAtlas(pass);break;}
+    msg=r==='new'?null:'口令不对，请重输';pass=null;
+    try{sessionStorage.removeItem('np_pass');}catch(e){}
+  }
+  try{sessionStorage.setItem('np_pass',pass);}catch(e){}
 }
 const isVisited=id=>ledger.isVisited(id);
 const isTamper=id=>ledger.isTamper(id);
