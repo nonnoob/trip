@@ -46,12 +46,16 @@ function create(opts){
     async load(hash){
       const m=hash&&hash.match(/share=([^&]+)/);
       if(m){try{const data=JSON.parse(b64urlToStr(m[1]));if(data&&data.pub){S={idn:{pub:data.pub,fp:data.fp||await fingerprint(subtle,data.pub)},recs:data.recs||{}};share=true;await verifyAll();return 'share';}}catch(e){}}
+      /* 每次 load 先清空：换存储槽（多图鉴）时不得残留上一本的数据 */
+      S={idn:null,recs:{}};PRIV=null;CKEY=null;CID=null;
       if(storage){const r=storage.load();if(r&&typeof r==='object')S={idn:r.idn||null,recs:r.recs||{}};}
       await verifyAll();return 'local';
     },
 
-    /* 生成身份（印章）：ECDSA 密钥对，私钥用口令派生 AES-GCM 加密后存储 */
+    /* 生成身份（印章）：ECDSA 密钥对，私钥用口令派生 AES-GCM 加密后存储。
+       新身份=新图鉴：旧记录（旧钥匙签的，换身份必验失败）一并清空 */
     async setup(pass){
+      S={idn:null,recs:{}};VALID={};
       const kp=await subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
       const pub=await subtle.exportKey('jwk',kp.publicKey);
       const priv=await subtle.exportKey('pkcs8',kp.privateKey);
@@ -98,11 +102,13 @@ function create(opts){
     /* ---------- 云存档（ADR-0010） ---------- */
     async cloudId(pass){return cloudIdOf(subtle,pass);},
 
-    /* 导出：整包（身份+记录）AES-GCM 加密，再对密文 ECDSA 签名——仓库里不裸奔，无口令者改不动 */
+    /* 导出：整包（身份+验签通过的记录）AES-GCM 加密，再对密文 ECDSA 签名——仓库里不裸奔，无口令者改不动。
+       只带验签通过的记录：坏记录不进云、不跨设备扩散 */
     async exportCloud(){
       if(!PRIV||!CKEY||!CID)throw new Error('locked');
+      const recs={};for(const k in S.recs){if(VALID[k])recs[k]=S.recs[k];}
       const iv=cryptoObj.getRandomValues(new Uint8Array(12));
-      const ct=await subtle.encrypt({name:'AES-GCM',iv},CKEY,enc.encode(JSON.stringify(S)));
+      const ct=await subtle.encrypt({name:'AES-GCM',iv},CKEY,enc.encode(JSON.stringify({idn:S.idn,recs:recs})));
       const sig=await subtle.sign({name:'ECDSA',hash:'SHA-256'},PRIV,ct);
       return {v:1,id:CID,fp:S.idn.fp,pub:{kty:'EC',crv:'P-256',x:S.idn.pub.x,y:S.idn.pub.y},salt:S.idn.salt,iv:abToB64(iv),ct:abToB64(ct),sig:abToB64(sig)};
     },

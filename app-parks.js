@@ -285,6 +285,7 @@ function openInfo(p,fromList){
   h+='<div class="intro">'+p.intro+'</div><div class="hl">✨ 亮点：<b>'+p.hl+'</b></div>';
   h+='<div class="stampbox">';
   if(SHARE){h+='<div class="hint">👁 只读</div>';}
+  else if(tam){h+='<button class="holdbtn danger" id="holdRemove"><span class="prog2"></span><span class="lab">长按删除异常记录</span></button>';}
   else if(p._terr){ // territory parks check in here (no state view)
     if(vis){h+='<button class="holdbtn danger" id="holdRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';}
     else{h+='<button class="holdbtn" id="holdStamp"><span class="prog2"></span><span class="lab">长按盖章打卡 🅿️</span></button>';}
@@ -317,7 +318,7 @@ function showCallout(p){
   h+='<div style="margin-top:6px"><span class="pill state">📍 '+p.st+'</span><span class="pill yr">设立 '+p.yr+'</span></div>';
   h+='<div class="cintro">'+p.intro+'</div><div class="chl">✨ '+p.hl+'</div><div class="cstat">';
   if(SHARE)h+='<span style="color:var(--muted)">👁 只读</span>'+(vis?' · <span style="color:var(--ok)">✓ '+rec.d+'</span>':'');
-  else if(tam)h+='<span style="color:var(--bad)">⚠ 签名异常（已改动）</span>';
+  else if(tam)h+='<span style="color:var(--bad)">⚠ 签名异常</span><button class="holdbtn danger" id="cRemove"><span class="prog2"></span><span class="lab">长按删除</span></button>';
   else if(vis)h+='<span style="color:var(--ok)">✓ 已点亮 · '+rec.d+'</span><button class="holdbtn danger" id="cRemove"><span class="prog2"></span><span class="lab">长按取消打卡</span></button>';
   h+='</div>';c.innerHTML=h;stage.appendChild(c);
   const cw=c.offsetWidth,ch=c.offsetHeight;

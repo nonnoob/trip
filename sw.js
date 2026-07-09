@@ -2,15 +2,15 @@
    策略：同源 GET 一律 stale-while-revalidate（先出缓存、后台更新、下次生效）；
    跨域（地图瓦片/天气/OSRM/Google 字体等）完全不接管，由页面各自超时降级。
    改本文件必须升 CACHE_VERSION，否则老缓存不清、新预缓存不装。 */
-const CACHE_VERSION = 'trip-v4';
+const CACHE_VERSION = 'trip-v5';
 const PRECACHE = [
   './',
   'index.html',
   'leaflet.min.js',
   'leaflet.min.css',
   'parks.html',
-  'app-parks.js?v=28',
-  'ledger.js?v=2',
+  'app-parks.js?v=29',
+  'ledger.js?v=3',
   'scratchable.js?v=1',
   'park-bounds.js',
   'd3.min.js',
