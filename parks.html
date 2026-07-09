@@ -122,14 +122,13 @@ svg#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .sv-emptly{padding:46px 18px;text-align:center;color:var(--muted)}
 .sv-emptly .big2{font-size:46px}
 /* scratch medallion */
-.medallion{position:absolute;transform:translate(-50%,-50%);width:128px;text-align:center;touch-action:pinch-zoom}
-.medallion.small{width:104px}
-.med-disc{position:relative;width:84px;height:84px;margin:0 auto;border-radius:50%;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.4),inset 0 0 0 2px rgba(231,192,106,.25)}
+.medallion{position:absolute;transform:translate(-50%,-50%);text-align:center;touch-action:pinch-zoom;pointer-events:none}
+.med-disc{position:relative;width:84px;height:84px;margin:0 auto;border-radius:50%;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.4),inset 0 0 0 2px rgba(231,192,106,.25);pointer-events:auto}
 .med-base{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px;background:radial-gradient(circle at 50% 38%,#1c4a3a,#10303f);filter:grayscale(1) brightness(.8);transition:filter .6s}
 .med-base.color{filter:grayscale(0) brightness(1)}
 .med-ring{position:absolute;inset:0;border-radius:50%;border:2px dashed rgba(159,176,184,.5);pointer-events:none}
 .med-ring.done{border:2px solid var(--gold);box-shadow:0 0 10px rgba(231,192,106,.6)}
-.med-canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;cursor:grab;touch-action:pinch-zoom}
+.med-canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;cursor:grab;touch-action:pinch-zoom;opacity:.6}
 /* in-map detail callout (leader line) for the state view */
 .sv-callout{position:absolute;z-index:20;width:210px;max-width:74%;background:linear-gradient(180deg,#16384a,#102a37);border:1px solid var(--gold2);border-radius:14px;padding:11px 12px 12px;box-shadow:0 12px 34px rgba(0,0,0,.55);animation:cfade .18s ease}
 @keyframes cfade{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
@@ -298,7 +297,7 @@ window.PARKS=PARKS;window.REGIONS=REGIONS;window.TIERS=TIERS;
 </script>
 <script src="ledger.js?v=4"></script>
 <script src="scratchable.js?v=1"></script>
-<script src="app-parks.js?v=31"></script>
+<script src="app-parks.js?v=32"></script>
 <script>if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 </body>
 </html>

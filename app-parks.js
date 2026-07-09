@@ -189,12 +189,12 @@ function enterState(name){
     const n=ps.length;
     // figure size scaled to fit inside the state's box
     let FIG;
-    if(bb){const bw=bb[1][0]-bb[0][0],bh=bb[1][1]-bb[0][1];FIG=Math.sqrt(Math.max(1,bw*bh)/n)*0.58;FIG=Math.min(FIG,bw*0.58,bh*0.4,112);FIG=Math.max(38,Math.round(FIG));}
+    if(bb){const bw=bb[1][0]-bb[0][0],bh=bb[1][1]-bb[0][1];FIG=Math.sqrt(Math.max(1,bw*bh)/n)*0.58;FIG=Math.min(FIG,bw*0.58,bh*0.4,112);FIG=Math.max(44,Math.round(FIG));}
     else FIG=n>4?86:112;
     // start positions at true geographic location
     const pts=ps.map(p=>{let xy=proj?proj([p.lng,p.lat]):null;if(!xy||isNaN(xy[0]))xy=[cen[0],cen[1]];return {p,x:xy[0],y:xy[1]};});
-    // tight spacing: keep figures near their true geographic positions (only nudge apart enough to not overlap)
-    const hmin=FIG*0.86,vmin=FIG*0.86;
+    // 圆章尽量不互相压：间距略大于直径（挤不下时 relax 会贴边残留少量重叠）
+    const hmin=FIG*1.04,vmin=FIG*1.04;
     // keep disc centers inside the state's box
     let ins=bb?[bb[0][0]+FIG*0.5,bb[0][1]+FIG*0.5,bb[1][0]-FIG*0.5,bb[1][1]-FIG*0.5]:[FIG*0.5,FIG*0.5,W-FIG*0.5,Hs-FIG*0.5];
     if(ins[2]<ins[0]){const m=(ins[0]+ins[2])/2;ins[0]=ins[2]=m;}if(ins[3]<ins[1]){const m=(ins[1]+ins[3])/2;ins[1]=ins[3]=m;}
@@ -226,13 +226,13 @@ function initScratch(cv,grayEl,clipD,p,finalize){
 /* ---------- 徽章：emoji 圆章（边界轮廓已弃用，ADR-0011） ---------- */
 function makeMedallion(p,x,y,FIG){
   const vis=isVisited(p.id), tam=isTamper(p.id);
-  const SZ=Math.max(44,Math.min(Math.round(FIG),96)), small=SZ<72;
-  const m=el('div','medallion'+(small?' small':''));m.style.left=x+'px';m.style.top=y+'px';m.setAttribute('data-id',p.id);
+  const SZ=Math.max(44,Math.min(Math.round(FIG),96));
+  const m=el('div','medallion');m.style.left=x+'px';m.style.top=y+'px';m.style.width=SZ+'px';m.setAttribute('data-id',p.id);
   const disc=el('div','med-disc');disc.style.width=SZ+'px';disc.style.height=SZ+'px';
   const base=el('div','med-base'+(vis?' color':''));base.style.fontSize=Math.round(SZ*0.47)+'px';base.textContent=p.em;
   const ring=el('div','med-ring'+(vis||tam?' done':''));if(tam)ring.style.borderColor='var(--bad)';
   disc.appendChild(base);disc.appendChild(ring);disc.style.cursor='pointer';
-  if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,Scratchable.circlePath(SZ),p,()=>{ring.classList.add('done');finishCheck(p);});}
+  if(!vis){const cv=el('canvas','med-canvas');disc.appendChild(cv);initScratch(cv,base,Scratchable.circlePath(SZ),p,()=>{ring.classList.add('done');disc.onclick=()=>showCallout(p);finishCheck(p);});}
   else{disc.onclick=()=>showCallout(p);}
   m.appendChild(disc);
   return m;
