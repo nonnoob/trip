@@ -2,7 +2,7 @@
    策略：同源 GET 一律 stale-while-revalidate（先出缓存、后台更新、下次生效）；
    跨域（地图瓦片/天气/OSRM/Google 字体等）完全不接管，由页面各自超时降级。
    改本文件必须升 CACHE_VERSION，否则老缓存不清、新预缓存不装。 */
-const CACHE_VERSION = 'trip-v14';
+const CACHE_VERSION = 'trip-v15';
 const PRECACHE = [
   './',
   'index.html',
