@@ -198,12 +198,25 @@ const TRIPS=[
   checklist:[['y1','7/4 早 7 点前进园','独立日最旺·趁早占车位、坐免费接驳车'],['y2','买门票或 $80 年票','recreation.gov 网购更快过关'],['y3','(可选)订 7/4 晚饭','Wuksachi Lodge The Peaks 需订位'],['y4','出发前再查路况','nps.gov/seki conditions'],['y5','下载离线地图','园内几乎无信号'],['y6','门户镇加满油+备水零食','园内补给少且贵'],['y7','带防晒/外套/泳衣','山脚晒、林中凉、洞里约9°C']],
   tips:['7/4 独立日全年最旺：上午8点前进园、停 Giant Forest 博物馆换乘免费接驳车；下午3点后人车回落。','Tokopah Falls 是园内最棒的瀑布徒步(往返约3.4mi·2.5–3h)：Lodgepole 停车场早满趁早去；步道沿 Kaweah 河、水急冰冷勿下水。','Cedar Grove 深谷、Mineral King 又远又窄(部分土路、单车道无护栏)这趟不安排；想多看巨杉可加北侧 Grant Grove(约1h)。','园内基本无手机信号：先下载 Google 离线地图；门户镇加满油、备足水和零食。','熊箱存食、车内不留含食物气味物品；山脚 Kaweah 河水流湍急勿下水。']
  },
- {id:'sea',emoji:'🌲',name:'西雅图',en:'Seattle',start:'2026-08-15',days:5,status:'idea',statusText:'按季节建议',
-  transport:'✈️ 飞 + 当地租车',weather:'8月全年最干爽，Rainier 高山野花盛开，窗口最窄。',
+ {id:'sea',emoji:'🌲',name:'西雅图',en:'Seattle',start:'2026-09-04',days:4,status:'plan',statusText:'9/4 出发 · 劳动节 4天3夜 · 待订机/酒',
+  transport:'✈️ SNA↔SEA 直飞 · 市内 Link 轻轨/渡轮/步行，不租车',weather:'9月初仍在干爽窗口：白天 21–26°C，早晚 13–16°C 带外套；日落约 19:45。',
   doc:DOC('1kaDIB6FFI6BX6AafDJ5tQ5Ze55AB2V9cswd_EzjG-s0'),
-  highlights:['派克市场 + 第一家星巴克','Rainier 雷尼尔山野花','奥林匹克国家公园雨林海岸','波音工厂 / 飞行博物馆','太空针塔 + 玻璃艺术馆']},
- {id:'yel',emoji:'🦬',name:'黄石 + 大提顿',en:'Yellowstone',start:'2026-09-05',days:6,status:'idea',statusText:'按季节建议',
-  transport:'✈️ 飞 Bozeman + 自驾环线',weather:'9月初游客比盛夏少、天气仍好、动物活跃；园内住宿要提前抢。',
+  chips:[['📅','9/4–9/7 周五~周一·劳动节'],['🧭','4 天 3 晚 · 不租车'],['🏨','住 Downtown/Pike Place']],
+  itinerary:[
+   {n:'Day 1',d:'9/4 周五 · 落地+派克市场',route:'https://www.google.com/maps/dir/?api=1&origin=Pike+Place+Market+Seattle&destination=The+Pink+Door+Seattle&waypoints=Olympic+Sculpture+Park&travelmode=walking',
+    items:[['06:30','SNA 早班机起飞','Alaska 直飞约2.5h·登机箱不托运'],['09:00','SEA 落地 → Link 轻轨进城','1 Line 直达 Westlake 约40min/$3.25·酒店寄存行李'],['11:00','派克市场','鱼摊秀·地下层老店·午饭 Pike Place Chowder 面包碗'],['14:30','海滨步道散步','沿 waterfront 北上·看海湾'],['15:30','奥林匹克雕塑公园','免费·海湾背景大型雕塑·约45min'],['17:00','回酒店入住歇脚','落地日不硬塞'],['19:00','The Pink Door 晚餐','Post Alley 隐蔽入口·卡巴莱表演·已订位']]},
+   {n:'Day 2',d:'9/5 周六 · Seattle Center 三件套+夜景',route:'https://www.google.com/maps/dir/?api=1&origin=Museum+of+Pop+Culture+Seattle&destination=Kerry+Park+Seattle&waypoints=Chihuly+Garden+and+Glass%7CSpace+Needle&travelmode=walking',
+    items:[['09:45','Westlake 坐单轨 Monorail','2分钟直达 Seattle Center/$3.5'],['10:00','MoPOP 流行文化博物馆','开门第一站避人流·Nirvana/科幻/奇幻常设展·CityPASS'],['12:30','Seattle Center 午餐','Armory 美食广场'],['13:30','Chihuly 玻璃艺术园','温室午后偏热·趁下午早段·CityPASS'],['17:45','Space Needle 日落场','提前兑换时段·玻璃地板·日落约19:40'],['19:30','Uber 上 Kerry Park','$8–12·天际线夜景收尾·9月初19:45日落']]},
+   {n:'Day 3',d:'9/6 周日 · 渡轮+Fremont/Ballard',route:'https://www.google.com/maps/dir/?api=1&origin=Colman+Dock+Seattle&destination=The+Walrus+and+the+Carpenter+Seattle&waypoints=Winslow+Bainbridge+Island%7CFremont+Troll%7CBallard+Farmers+Market&travelmode=driving',
+    items:[['09:30','Pier 52 步行上渡轮','单程$11.35·回程免费·甲板看天际线+雪山'],['10:15','Bainbridge 上岛','Winslow 小镇·咖啡馆画廊·2–3小时'],['13:00','渡轮返程','留意甲板拍城市'],['14:00','Uber 去 Fremont','~$18·巨魔石像+列宁像·「宇宙中心」'],['15:00','Ballard Farmers Market','周日市集只到15:00·抓尾巴·逛 Ballard Ave 老街'],['17:30','The Walrus and the Carpenter','全城最难订生蚝吧·Resy 或开门前排队']]},
+   {n:'Day 4',d:'9/7 周一·劳动节 · 咖啡巡礼+地下城+回程',route:'https://www.google.com/maps/dir/?api=1&origin=Glo%27s+Seattle&destination=Seattle-Tacoma+International+Airport&waypoints=Victrola+Coffee+Roasters+Pike+Street%7CBill+Speidel%27s+Underground+Tour&travelmode=transit',
+    items:[['08:30','Glo\'s 早餐','Capitol Hill 传奇早餐店·早到避排队'],['10:00','咖啡巡礼','Victrola 310 E Pike → Espresso Vivace·劳动节照常开'],['12:00','Underground Tour 中午场','Pioneer Square·1889大火埋掉的地下街道·$22 提前购票'],['14:00','派克市场买手信','Link 一站回·补拍第一家星巴克'],['16:00','Link 去机场','40min 不怕堵车'],['19:00','晚班机回 SNA','四天用满']]}
+  ],
+  food:[['The Pink Door','意面+卡巴莱 · Day1晚·OpenTable'],['Pike Place Chowder','面包碗浓汤 · Day1午'],['The Walrus and the Carpenter','华盛顿生蚝 · Day3晚·Resy抢'],['Glo\'s','美式早餐 · Day4早'],['Café Campagne','法式早午餐 · 备选']],
+  checklist:[['s1','本周订机票 SNA↔SEA','Alaska 官网·劳动节周末只涨不跌·目标两人$500–700'],['s2','本周订酒店 3晚','Downtown/Pike Place·免费取消·Moxy/Palihotel/citizenM'],['s3','本周抢 Walrus 订位(9/6)','Resy·全城最难订·订不到开门前排队'],['s4','7月底前买 CityPASS ×2','约$99–115/人·兑 Space Needle 9/5 日落时段'],['s5','订 Pink Door 9/4 晚餐','OpenTable'],['s6','8月中订 Underground Tour','9/7 中午场·长周末会满'],['s7','装 WSF App + Transit GO','渡轮时刻+轻轨购票·步行上船免预约']],
+  tips:['不租车：Link 轻轨机场往返+市内步行/单轨/Uber 全覆盖，省租车停车约$450，劳动节周一晚不怕堵车误机。','渡轮长周末车辆排长队，但步行客不受影响——无车反而是优势。','9月初日落约19:45（比8月早1小时），Space Needle/Kerry Park 按此排。','Rainier 这次明确不去：劳动节周末 Paradise 停车场8点前满+野花已过峰，留给以后专程。','2nd/3rd Ave 部分路段夜间较乱，晚归走 1st Ave 或 Pike/Pine。']},
+ {id:'yel',emoji:'🦬',name:'黄石 + 大提顿',en:'Yellowstone',start:'2027-09-04',days:6,status:'idea',statusText:'按季节建议 · 自2026顺延',
+  transport:'✈️ 飞 Bozeman + 自驾环线',weather:'9月初游客比盛夏少、天气仍好、动物活跃；园内住宿提前6–12个月抢（2027年9月的房约2026年8–10月放票）。',
   doc:DOC('1o-ljM14H569TzPrRyQwUC-sR8Rmk3owYcMeOLOvs8UQ'),
   highlights:['老忠实喷泉 + 大棱镜温泉','黄石大峡谷 + 下瀑布','Lamar/Hayden 谷看野牛狼群','大提顿雪山 + 珍妮湖','园内住宿需提前 6–12 个月']},
  {id:'abq',emoji:'🎈',name:'阿尔伯克基',en:'Albuquerque',start:'2026-10-03',days:5,status:'idea',statusText:'气球节 10/3–11',
@@ -232,7 +245,11 @@ const GEO={
    [[36.5816,-118.7514,'General Sherman'],[36.5650,-118.7727,'Giant Forest Museum'],[36.5470,-118.7656,'Moro Rock']],
    [[36.6035,-118.7237,'Tokopah Falls'],[36.5547,-118.7480,'Crescent Meadow'],[36.5470,-118.7656,'Moro Rock'],[36.5651,-118.7740,'Big Trees Trail']],
    [[36.5060,-118.8030,'Hospital Rock'],[36.4386,-118.9023,'Three Rivers']]]},
- sea:{coord:[47.6062,-122.3321]},
+ sea:{coord:[47.6062,-122.3321],days:[
+   [[47.6097,-122.3422,'派克市场'],[47.6166,-122.3553,'雕塑公园'],[47.6103,-122.3417,'The Pink Door']],
+   [[47.6215,-122.3481,'MoPOP'],[47.6206,-122.3505,'Chihuly'],[47.6205,-122.3493,'Space Needle'],[47.6295,-122.3599,'Kerry Park']],
+   [[47.6026,-122.3393,'Pier 52 渡轮'],[47.6262,-122.5212,'Bainbridge Winslow'],[47.6510,-122.3473,'Fremont Troll'],[47.6684,-122.3847,'Ballard 市集'],[47.6659,-122.3822,'Walrus 生蚝吧']],
+   [[47.6193,-122.3253,"Glo's"],[47.6141,-122.3277,'Victrola'],[47.6021,-122.3343,'地下城 Tour'],[47.6097,-122.3422,'派克市场'],[47.4502,-122.3088,'SEA 机场']]]},
  yel:{coord:[44.4605,-110.8281]},
  abq:{coord:[35.0844,-106.6504]},
  nyc:{coord:[40.7128,-74.0060]},
@@ -272,16 +289,16 @@ const OVERVIEW={
  doc:DOC('1JohIUWkRZvSyUDrOADmRUB3gCOTcWKf4FTluVoqDUs0'),
  principle:'尔湾出发 · 轻松慢节奏。已定的按真实日期排，其余按各地最佳季节给建议、可自由调整。',
  season:[
-  ['🌲 西雅图（8月）','全年最干爽，Rainier 高山野花盛开，窗口最窄、优先锁定'],
-  ['🦬 黄石+大提顿（9月初）','游客比盛夏少、天气仍好、动物活跃；园内住宿提前 6–12 月抢'],
+  ['🌲 西雅图（2026 劳动节 9/4–9/7 已定档）','9月初仍在干爽窗口；纯市区+渡轮不租车，Rainier 留以后专程'],
+  ['🦬 黄石+大提顿（顺延至 2027-09）','避免与西雅图同月两大程；园内住宿提前 6–12 月抢，2026年8–10月放票就盯'],
   ['🎈 阿尔伯克基（10月）','正赶国际热气球节 2026/10/3–11，全年最值得来的时刻'],
   ['🗽 纽约（12月）','圣诞假日季氛围最佳（也可改 10 月看秋叶、更舒适）'],
   ['🏙️ 芝加哥（6月）','初夏湖滨宜人、节庆开始、未到盛夏闷热']
  ],
  booking:[
   ['✈️ 机票','远途提前 6–10 周；旺季(暑假/圣诞/气球节) 3–6 个月；SNA 与 LAX 比价'],
-  ['🏞️ 年票 $80','一年覆盖美洲杉+黄石+Rainier/Olympic，去 2 个就回本'],
-  ['🦬 黄石园内住宿','放票数小时售罄，提前 6–12 月；订不到就住西黄石/Gardiner'],
+  ['🏞️ 年票 $80','2026 下半年暂无国家公园行程，留到 2027 黄石前再买'],
+  ['🦬 黄石园内住宿（2027-09）','放票数小时售罄；2027年9月的房约2026年8–10月放票，设好提醒'],
   ['🎈 气球节酒店','2026/10/3–11 暴涨，提前 3–6 个月订'],
   ['🌲 美洲杉/红杉','免预约(门票 $35/车)；7/4 周末超挤，住门口一早进园、停博物馆坐免费接驳车']
  ],
@@ -290,7 +307,7 @@ const OVERVIEW={
   ['旧金山','✈️ 去 + 🚆 海岸星光号回（平时可自驾 ~6h）'],
   ['阿尔伯克基','🚗 Route 66 ~810mi/12h 或 ✈️ 1.5h'],
   ['黄石','✈️ 飞 Bozeman 落地租车'],
-  ['西雅图','✈️ 飞 + 当地租车'],
+  ['西雅图','✈️ SNA 直飞；市内 Link 轻轨+渡轮+步行，不租车'],
   ['纽约 / 芝加哥','✈️ 飞，市内地铁/步行']
  ]
 };
